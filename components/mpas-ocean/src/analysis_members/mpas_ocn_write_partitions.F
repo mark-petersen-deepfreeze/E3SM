@@ -7,30 +7,30 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_TEM_PLATE
+!  ocn_write_partitions
 !
-!> \brief MPAS ocean analysis mode member: TEM_PLATE
-!> \author FILL_IN_AUTHOR
-!> \date   FILL_IN_DATE
+!> \brief MPAS ocean analysis mode member: write_partitions
+!> \author Mark Petersen
+!> \date   July 2021
 !> \details
-!>  MPAS ocean analysis mode member: TEM_PLATE
+!>  MPAS ocean analysis mode member: write_partitions
 !>  In order to add a new analysis member, do the following:
 !>  1. Copy these to your new analysis member name:
 !>     cp mpas_ocn_TEMPLATE.F mpas_ocn_your_new_name.F
 !>     cp Registry_TEMPLATE.xml Registry_your_new_name.xml
 !>
 !>  2. In those two new files, replace the following text:
-!>     temPlate, TEM_PLATE, FILL_IN_AUTHOR, FILL_IN_DATE
-!>     Typically temPlate uses camel case (variable names), like yourNewName,
-!>     while TEM_PLATE uses underscores (subroutine names), like your_new_name.
+!>     writePartitions, write_partitions, Mark Petersen, July 2021
+!>     Typically writePartitions uses camel case (variable names), like yourNewName,
+!>     while write_partitions uses underscores (subroutine names), like your_new_name.
 !>     note: do not replace 'filename_template' in Registry_yourNewName.xml
 !>
 !>  3. Add a #include line for your registry to
 !>     Registry_analysis_members.xml
 !>
 !>  4. In mpas_ocn_analysis_driver.F, add a use statement for your new analysis member.
-!>     In addition, add lines for your analysis member, and replace TEM_PLATE
-!>     and temPlate as described in step 2. There should be 5 places that need additions:
+!>     In addition, add lines for your analysis member, and replace write_partitions
+!>     and writePartitions as described in step 2. There should be 5 places that need additions:
 !>      - Adding the analysis member name to the analysis member list
 !>      - Adding an init if test can subroutine call
 !>      - Adding a compute if test can subroutine call
@@ -45,7 +45,7 @@
 !>
 !-----------------------------------------------------------------------
 
-module ocn_TEM_PLATE
+module ocn_write_partitions
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -73,10 +73,10 @@ module ocn_TEM_PLATE
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_init_TEM_PLATE, &
-             ocn_compute_TEM_PLATE, &
-             ocn_restart_TEM_PLATE, &
-             ocn_finalize_TEM_PLATE
+   public :: ocn_init_write_partitions, &
+             ocn_compute_write_partitions, &
+             ocn_restart_write_partitions, &
+             ocn_finalize_write_partitions
 
    !--------------------------------------------------------------------
    !
@@ -90,18 +90,18 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_init_TEM_PLATE
+!  routine ocn_init_write_partitions
 !
 !> \brief   Initialize MPAS-Ocean analysis member
-!> \author  FILL_IN_AUTHOR
-!> \date    FILL_IN_DATE
+!> \author  Mark Petersen
+!> \date    July 2021
 !> \details
 !>  This routine conducts all initializations required for the
 !>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_init_TEM_PLATE(domain, err)!{{{
+   subroutine ocn_init_write_partitions(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -133,22 +133,22 @@ contains
 
       err = 0
 
-   end subroutine ocn_init_TEM_PLATE!}}}
+   end subroutine ocn_init_write_partitions!}}}
 
 !***********************************************************************
 !
-!  routine ocn_compute_TEM_PLATE
+!  routine ocn_compute_write_partitions
 !
 !> \brief   Compute MPAS-Ocean analysis member
-!> \author  FILL_IN_AUTHOR
-!> \date    FILL_IN_DATE
+!> \author  Mark Petersen
+!> \date    July 2021
 !> \details
 !>  This routine conducts all computation required for this
 !>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_compute_TEM_PLATE(domain, timeLevel, err)!{{{
+   subroutine ocn_compute_write_partitions(domain, timeLevel, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -180,7 +180,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), pointer :: temPlateAMPool
+      type (mpas_pool_type), pointer :: writePartitionsAMPool
       type (dm_info) :: dminfo
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: statePool
@@ -201,7 +201,7 @@ contains
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block % structs, 'temPlateAM', temPlateAMPool)
+         call mpas_pool_get_subpool(block % structs, 'writePartitionsAM', writePartitionsAMPool)
 
          ! Here are some example variables which may be needed for your analysis member
          call mpas_pool_get_dimension(statePool, 'num_tracers', num_tracers)
@@ -243,29 +243,29 @@ contains
       ! correct values for writing output.
       block => domain % blocklist
       do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'temPlateAM', temPlateAMPool)
+         call mpas_pool_get_subpool(block % structs, 'writePartitionsAM', writePartitionsAMPool)
 
-         ! assignment of final temPlateAM variables could occur here.
+         ! assignment of final writePartitionsAM variables could occur here.
 
          block => block % next
       end do
 
-   end subroutine ocn_compute_TEM_PLATE!}}}
+   end subroutine ocn_compute_write_partitions!}}}
 
 !***********************************************************************
 !
-!  routine ocn_restart_TEM_PLATE
+!  routine ocn_restart_write_partitions
 !
 !> \brief   Save restart for MPAS-Ocean analysis member
-!> \author  FILL_IN_AUTHOR
-!> \date    FILL_IN_DATE
+!> \author  Mark Petersen
+!> \date    July 2021
 !> \details
 !>  This routine conducts computation required to save a restart state
 !>  for the MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_restart_TEM_PLATE(domain, err)!{{{
+   subroutine ocn_restart_write_partitions(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -297,22 +297,22 @@ contains
 
       err = 0
 
-   end subroutine ocn_restart_TEM_PLATE!}}}
+   end subroutine ocn_restart_write_partitions!}}}
 
 !***********************************************************************
 !
-!  routine ocn_finalize_TEM_PLATE
+!  routine ocn_finalize_write_partitions
 !
 !> \brief   Finalize MPAS-Ocean analysis member
-!> \author  FILL_IN_AUTHOR
-!> \date    FILL_IN_DATE
+!> \author  Mark Petersen
+!> \date    July 2021
 !> \details
 !>  This routine conducts all finalizations required for this
 !>  MPAS-Ocean analysis member.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_finalize_TEM_PLATE(domain, err)!{{{
+   subroutine ocn_finalize_write_partitions(domain, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -344,8 +344,8 @@ contains
 
       err = 0
 
-   end subroutine ocn_finalize_TEM_PLATE!}}}
+   end subroutine ocn_finalize_write_partitions!}}}
 
-end module ocn_TEM_PLATE
+end module ocn_write_partitions
 
 ! vim: foldmethod=marker
