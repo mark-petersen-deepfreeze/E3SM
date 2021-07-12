@@ -846,4 +846,11 @@
 <config_AM_mocStreamfunction_region_group>'all'</config_AM_mocStreamfunction_region_group>
 <config_AM_mocStreamfunction_transect_group>'all'</config_AM_mocStreamfunction_transect_group>
 
+<!-- AM_writePartitions -->
+<config_AM_writePartitions_enable>.true.</config_AM_writePartitions_enable>
+<config_AM_writePartitions_compute_interval>'00-00-01_00:00:00'</config_AM_writePartitions_compute_interval>
+<config_AM_writePartitions_output_stream>'none'</config_AM_writePartitions_output_stream>
+<config_AM_writePartitions_compute_on_startup>.true.</config_AM_writePartitions_compute_on_startup>
+<config_AM_writePartitions_write_on_startup>.true.</config_AM_writePartitions_write_on_startup>
+
 </namelist_defaults>
