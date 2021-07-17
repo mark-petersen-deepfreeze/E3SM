@@ -1446,6 +1446,16 @@ add_default($nl, 'config_AM_mocStreamfunction_normal_velocity_value');
 add_default($nl, 'config_AM_mocStreamfunction_region_group');
 add_default($nl, 'config_AM_mocStreamfunction_transect_group');
 
+######################################
+# Namelist group: AM_writePartitions #
+######################################
+
+add_default($nl, 'config_AM_writePartitions_enable');
+add_default($nl, 'config_AM_writePartitions_compute_interval');
+add_default($nl, 'config_AM_writePartitions_output_stream');
+add_default($nl, 'config_AM_writePartitions_compute_on_startup');
+add_default($nl, 'config_AM_writePartitions_write_on_startup');
+
 #-----------------------------------------------------------------------------------------------
 # *** Write output namelist file (mpaso_in) and input dataset list (mpaso.input_data_list) ***
 #-----------------------------------------------------------------------------------------------
