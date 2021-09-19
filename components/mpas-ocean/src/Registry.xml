@@ -208,6 +208,10 @@
 					description="Time integration method."
 					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit'"
 		/>
+		<nml_option name="config_triskCV" type="logical" default_value=".true." units="unitless"
+                                        description="Turns on the computation of the kinetic energy in the TRiSK-CV way."
+                                        possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<nml_record name="hmix" mode="forward">
 		<nml_option name="config_hmix_scaleWithMesh" type="logical" default_value=".false." units="unitless"
@@ -262,6 +266,10 @@
 					description="The divergence portion of the del4 operator is scaled by this factor."
 					possible_values="any positive real"
 		/>
+                <nml_option name="config_mom_del4_vort_factor" type="real" default_value="1.0" units="non-dimensional"
+                                        description="The vorticity portion of the del4 operator is scaled by this factor."
+                                        possible_values="any positive real"
+                />
 		<nml_option name="config_use_tracer_del4" type="logical" default_value=".false." units="unitless"
 					description="If true, biharmonic horizontal mixing is used on the tracer equation."
 					possible_values=".true. or .false."
@@ -1728,8 +1736,12 @@
 			<var name="refLayerThickness"/>
 			<var name="xtime"/>
 			<var name="zMid"/>
-			<var name="zTop"/>
+			<var name="zTop"/>  
+                        <var name="weightsOnEdge_lsqr"/>
 			<var name="kineticEnergyCell"/>
+                        <var name="kineticEnergyEdge"/>
+                        <var name="u_perp"/>
+                        <var name="divergence"/>
 			<var name="relativeVorticityCell"/>
 			<var name="areaCellGlobal"/>
 			<var name="areaEdgeGlobal"/>
@@ -2186,6 +2198,9 @@
 		<var name="weightsOnEdge" type="real" dimensions="maxEdges2 nEdges" units="unitless"
 			 description="Reconstruction weights associated with each of the edgesOnEdge, used to reconstruct the tangentialVelocity from normalVelocities on neighboring edges."
 		/>
+                <var name="weightsOnEdge_lsqr" type="real" dimensions="maxEdges2 nEdges" units="unitless"
+			 desription="Weights associated with each of the edgesOnEdge needed for the tangential velocity in the kinetic energy for TRiSK-CV."
+                />   
 		<var name="dvEdge" type="real" dimensions="nEdges" units="m"
 			 description="Length of each edge, computed as the distance between verticesOnEdge."
 		/>
@@ -2230,7 +2245,7 @@
 		/>
 		<var name="kiteAreasOnVertex" type="real" dimensions="vertexDegree nVertices" units="m^2"
 			 description="Area of the portions of each dual cell that are part of each cellsOnVertex."
-		/>
+		/> 
 		<var name="fEdge" type="real" dimensions="nEdges" units="s^{-1}"
 			 description="Coriolis parameter at edges."
 		/>
@@ -2572,6 +2587,14 @@
 			 description="kinetic energy of horizontal velocity on cells"
 			 packages="forwardMode;analysisMode"
 		/>
+                <var name="kineticEnergyEdge" type="real" dimensions="nVertLevels nEdges Time" units="m^2 s^{-2}"
+                         description="kinetic energy of horizontal velocity on edges"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="u_perp" type="real" dimensions="nVertLevels nEdges Time" units="m^2 s^{-2}"
+                         description="tangential velocity on edges needed for the computation of kineticEnergyEdge in TRSK++"
+                         packages="forwardMode;analysisMode"
+                />
 		<var name="viscosity" type="real" dimensions="nVertLevels nEdges Time" units="m^2 s^{-1}"
 			 description="horizontal viscosity"
 			 packages="forwardMode;analysisMode"
