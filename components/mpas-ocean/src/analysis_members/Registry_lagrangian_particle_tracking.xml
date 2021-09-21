@@ -99,6 +99,24 @@
 			description="If true, particles sample O2."
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_AM_lagrPartTrack_dt" type="real" default_value="60" units="s"
+			 description="Any positive real value, but limited by CFL condition."
+		/>
+		<nml_option name="config_AM_lagrPartTrack_static_particlces" type="logical" default_value=".false." units="unitless"
+			description="If true, particles stay in original location."
+			possible_values=".true. or .false."
+		/>
+<!--
+		<nml_option name="config_AM_lagrPartTrack_timeSinceReset" type="real" default_value="0.0" units="m"
+			 description="time (in seconds) since last particle reset"
+		/>
+		<nml_option name="config_AM_lagrPartTrack_resetTime" type="integer" default_value="86400" units="m"
+			 description="reset timer (in seconds) for particles"
+		/>
+		<nml_option name="config_AM_lagrPartTrack_numTimesReset" type="integer" default_value="0" units="unitless"
+			 description="flag to specify how many times the particle was reset"
+		/>
+-->
 	</nml_record>
 
 	<dims>
@@ -139,12 +157,8 @@
 			<var name="yParticleReset"/>
 			<var name="zParticleReset"/>
 			<var name="zLevelParticleReset"/>
-			<var name="timeSinceReset"/>
-			<var name="resetTime"/>
-			<var name="numTimesReset"/>
 			<var name="buoyancyParticle"/>
 			<var name="verticalTreatment"/>
-			<var name="dtParticle"/>
 			<var name="indexLevel"/>
 			<var name="cellOwnerBlock"/>
 			<var name="transfered"/>
@@ -179,12 +193,8 @@
 			<var name="zLevelParticleReset"/>
 			<var name="currentBlockReset"/>
 			<var name="currentCellReset"/>
-			<var name="timeSinceReset"/>
-			<var name="resetTime"/>
-			<var name="numTimesReset"/>
 			<var name="buoyancyParticle"/>
 			<var name="verticalTreatment"/>
-			<var name="dtParticle"/>
 			<var name="indexLevel"/>
 			<var name="transfered"/>
 			<var name="buoyancySurfaceValues"/>
@@ -210,10 +220,8 @@
 			<var name="zLevelParticleReset"/>
 			<var name="currentBlockReset"/>
 			<var name="currentCellReset"/>
-			<var name="resetTime"/>
 			<var name="buoyancyParticle"/>
 			<var name="verticalTreatment"/>
-			<var name="dtParticle"/>
 			<var name="indexLevel"/>
 			<var name="transfered"/>
 			<var name="buoyancySurfaceValues"/>
@@ -242,6 +250,9 @@
 	<var_struct name="lagrPartTrackScalars" time_levs="1" packages="lagrPartTrackAMPKG">
 		<var name="globalResetTimeValue" type="real" dimensions="Time" units="s"
 			 description="Time in s for a global reset."
+		/>
+		<var name="globalTimeSinceReset" type="real" dimensions="Time" units="s"
+			 description="Time in s since last global reset."
 		/>
 	</var_struct>
 	<var_struct name="lagrPartTrackFields" time_levs="2" packages="lagrPartTrackAMPKG">
@@ -339,23 +350,11 @@
 		<var name="currentCellReset" type="integer" dimensions="nParticles" units="unitless"
 			 description="reset cell for a particle"
 		/>
-		<var name="timeSinceReset" type="real" dimensions="nParticles" units="m"
-			 description="time (in seconds) since last particle reset" default_value="0.0"
-		/>
-		<var name="resetTime" type="integer" dimensions="nParticles" units="m"
-			 description="reset timer (in seconds) for particles"
-		/>
-		<var name="numTimesReset" type ="integer" dimensions="nParticles Time" units="unitless"
-			 description="flag to specify how many times the particle was reset" default_value="0"
-		/>
 		<var name="verticalTreatment" type="integer" dimensions="nParticles Time" units="unitless"
 			 description="select type of vertical treatment to be used, with possible_values='indexLevel','fixedZLevel','passiveFloat','buoyancySurface','argoFloat' (ENUM)"
 		/>
 		<var name="indexLevel" type="integer" dimensions="nParticles Time" units="unitless"
 			 description="0 if particle is fixed, or index level if particle is free-floating"
-		/>
-		<var name="dtParticle" type="real" dimensions="nParticles Time" units="s"
-			 description="Any positive real value, but limited by CFL condition."
 		/>
 		<var name="buoyancyParticle" type="real" dimensions="nParticles Time" units="kg m^{-3}"
 			 description="buoyancy values for particle, currently proxy for density"

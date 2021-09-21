@@ -255,6 +255,10 @@ contains
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_type), pointer :: lagrPartTrackFieldsPool, lagrPartTrackCellsPool, lagrPartTrackScratchPool
+
+
+      type (mpas_pool_type), pointer :: lagrPartTrackScalarPool
+
       integer, dimension(:), pointer :: cellOwnerBlock
       integer, pointer :: currentBlock, ioBlock, indexToParticleID, transfered, currentCellGlobalID
       type (mpas_particle_list_type), pointer :: particlelist
@@ -295,7 +299,7 @@ contains
       real (kind=RKIND), dimension(5) :: kCoeffVert
       real (kind=RKIND), dimension(2) :: timeCoeff
       real (kind=RKIND) :: dt, dtSim, tSubStep
-      real (kind=RKIND), pointer :: dtParticle
+!      real (kind=RKIND), pointer :: dtParticle
       real (kind=RKIND) :: zSubStep
       real (kind=RKIND) :: diffSubStepVert, diffParticlePositionVert, particleVelocityVert, verticalVelocityInterp
       real (kind=RKIND) :: buoyancyInterp
@@ -351,7 +355,8 @@ contains
 
       REAL (kind=RKIND), parameter :: eps=1e-12
 
-
+      logical :: resetAllParticles
+      real (kind=RKIND), pointer :: globalResetTimeValue, globalTimeSinceReset
       err = 0
 
       !! don't do compute for debugging purposes
@@ -498,6 +503,24 @@ contains
         call mpas_particle_list_test_num_current_particlelist(domain)
 #endif
 
+        ! adjust time step for consistency with integer number of steps
+        nSteps = ceiling(dtSim/config_AM_lagrPartTrack_dt)
+        dt = dtSim/nSteps
+        
+        resetAllParticles = .false.
+        call mpas_pool_get_subpool(block % structs, 'lagrPartTrackScalars', lagrPartTrackScalarPool)
+       call mpas_pool_get_array(lagrPartTrackScalarPool, 'globalResetTimeValue', globalResetTimeValue)
+        call mpas_pool_get_array(lagrPartTrackScalarPool, 'globalTimeSinceReset', globalTimeSinceReset)
+        ! advance particle time
+        globalTimeSinceReset = globalTimeSinceReset + dt
+        if (globalTimeSinceReset > globalResetTimeValue) then
+          resetAllParticles = .true.
+          globalTimeSinceReset = 0.0_RKIND
+          ! reset globalResetTimeValue
+          call ocn_setup_particle_reset_condition(domain, err)
+        end if
+
+
         !!!!!!!!!! LOOP OVER PARTICLES !!!!!!!!!!
         ! update the particle position (just from initialized value for now)
         ! this is a loop over particle list and its datastructures
@@ -526,7 +549,7 @@ contains
 
           call mpas_pool_get_array(particle % haloDataPool, 'verticalTreatment', verticalTreatment)
           call mpas_pool_get_array(particle % haloDataPool, 'indexLevel', indexLevel)
-          call mpas_pool_get_array(particle % haloDataPool, 'dtParticle', dtParticle)
+  !        call mpas_pool_get_array(particle % haloDataPool, 'dtParticle', dtParticle)
           call mpas_pool_get_array(particle % haloDataPool, 'buoyancyParticle', buoyancyParticle)
           call mpas_pool_get_array(particle % haloDataPool, 'indexToParticleID', indexToParticleID)
           call mpas_pool_get_array(particle % haloDataPool, 'currentCell', iCell)
@@ -565,9 +588,9 @@ contains
 #ifdef MPAS_DEBUG
           call mpas_timer_start("time_step_LPT")
 #endif
-          ! adjust time step for consistency with integer number of steps
-          nSteps = ceiling(dtSim/dtParticle)
-          dt = dtSim/nSteps
+        ! ! adjust time step for consistency with integer number of steps
+        !  nSteps = ceiling(dtSim/dtParticle)
+        !  dt = dtSim/nSteps
 
           !!!!!!!!!! ASSIGN TEMPORAL INTEGRATION COEFFICIENTS !!!!!!!!!!
           ! kCoeff   is (3,subStepOrder+1)
@@ -1072,15 +1095,13 @@ contains
           call mpas_timer_start("particleAssignments")
 #endif
 
-          resetParticle = .False.
-          if (resetParticles) then   ! need to link to currentBlockReset for communication
-            ! determine if particles should be reset based on different criteria.  If so, reset them.
-            call ocn_evaluate_particle_reset_condition(domain, block, particle, dtSim, iCell, resetParticle, err)
-          end if
-          resetParticleAny = resetParticleAny .or. resetParticle
-
-          if (.not. resetParticle) then
-            ! update halo fields for particles moving from adjacent computational halos
+!          resetParticle = .False.
+!          if (resetParticles) then   ! need to link to currentBlockReset for communication
+          if (resetAllParticles) then   ! need to link to currentBlockReset for communication
+!            ! determine if particles should be reset based on different criteria.  If so, reset them.
+            call ocn_evaluate_particle_reset_condition(domain, block, particle, dtSim, iCell, err)
+          else
+             ! update halo fields for particles moving from adjacent computational halos
             call mpas_particle_list_update_particle_block(domain, block, particle, 'lagrPartTrackCells', iCell)
           end if
 
@@ -1113,8 +1134,9 @@ contains
 #ifdef MPAS_DEBUG
       call mpas_timer_start("trans_from_block_to_blockLPT")
 #endif
-      if (resetParticles .and. resetParticleAny) then
-         ! need to link to currentBlockReset for communication
+!      if (resetParticles .and. resetParticleAny) then
+       if (resetAllParticles) then 
+        ! need to link to currentBlockReset for communication
          call mpas_particle_list_build_halos(domain, err, 'currentBlockReset', g_compProcNeighs)
          ! take the union of this halo with the particle computation halos to build complete computational halo
          call mpas_particle_list_self_union_halo_lists(g_compProcNeighs, g_compProcNeighsNearby, domain % dminfo % nprocs, &
@@ -1962,7 +1984,7 @@ contains
       real (kind=RKIND), dimension(5) :: kCoeffVert
       real (kind=RKIND), dimension(2) :: timeCoeff
       real (kind=RKIND) :: dt, dtSim, tSubStep
-      real (kind=RKIND), pointer :: dtParticle
+!      real (kind=RKIND), pointer :: dtParticle
       real (kind=RKIND) :: zSubStep
       real (kind=RKIND) :: diffSubStepVert, diffParticlePositionVert, particleVelocityVert, verticalVelocityInterp
       real (kind=RKIND) :: buoyancyInterp
@@ -2082,7 +2104,7 @@ contains
 
           call mpas_pool_get_array(particle % haloDataPool, 'verticalTreatment', verticalTreatment)
           call mpas_pool_get_array(particle % haloDataPool, 'indexLevel', indexLevel)
-          call mpas_pool_get_array(particle % haloDataPool, 'dtParticle', dtParticle)
+!          call mpas_pool_get_array(particle % haloDataPool, 'dtParticle', dtParticle)
           call mpas_pool_get_array(particle % haloDataPool, 'buoyancyParticle', buoyancyParticle)
           call mpas_pool_get_array(particle % haloDataPool, 'indexToParticleID', indexToParticleID)
 
