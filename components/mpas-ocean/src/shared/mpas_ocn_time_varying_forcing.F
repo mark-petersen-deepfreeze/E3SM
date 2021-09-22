@@ -565,7 +565,7 @@ contains
 !
 !> \brief
 !> \author Collin Victor, LANL
-!> \date 9/21/2021
+!> \date 9/22/2021
 !> \details This function is empty right now, will be updated with functionality in the future.
 !>
 !
@@ -591,9 +591,9 @@ contains
 !
 !  particle_forcing
 !
-!> \brief
+!> \brief Adds forcing from LIGHT particle data.
 !> \author Collin Victor, LANL
-!> \date 9/21/2021
+!> \date 9/22/2021
 !> \details
 !>
 !
