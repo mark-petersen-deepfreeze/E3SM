@@ -65,6 +65,10 @@ contains
       call init_land_ice_forcing(domain)
     endif
 
+    if (config_use_time_varying_particle_forcing) then
+      call init_particle_forcing(domain)
+    endif
+
     ! init other forcings, to be added later as needed
     !if (config_use_time_varying_****_forcing) then
     !  call init_****_forcing(domain)
@@ -213,6 +217,15 @@ contains
     if (config_use_time_varying_land_ice_forcing) then
 
         call land_ice_forcing(&
+             streamManager, &
+             domain, &
+             simulationClock)
+
+    endif
+
+    if (config_use_time_varying_particle_forcing) then
+
+        call particle_forcing(&
              streamManager, &
              domain, &
              simulationClock)
@@ -545,6 +558,100 @@ contains
     end do
 
   end subroutine land_ice_forcing!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_particle_forcing
+!
+!> \brief
+!> \author Collin Victor, LANL
+!> \date 9/21/2021
+!> \details This function is empty right now, will be updated with functionality in the future.
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_particle_forcing(domain)!{{{
+
+    type (domain_type) :: domain
+ ! 
+ !   select case (trim(config_time_varying_atmospheric_forcing_type))
+ !     case ("WINDPRES")
+ !        call init_atmospheric_forcing_WINDPRES(domain)
+ !     case default
+ !   call mpas_log_write("Particle forcing type unknown: "//trim(config_time_varying_atmospheric_forcing_type), MPAS_LOG_CRIT)
+ !   end select
+
+  end subroutine init_particle_forcing!}}}
+
+
+
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  particle_forcing
+!
+!> \brief
+!> \author Collin Victor, LANL
+!> \date 9/21/2021
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+
+  subroutine particle_forcing(streamManager, domain, simulationClock)!{{{
+
+    type (MPAS_streamManager_type), intent(inout) :: streamManager
+
+    type (domain_type) :: domain
+
+    type (MPAS_clock_type) :: simulationClock
+
+    type (MPAS_time_type) :: currentForcingTime
+
+    type (block_type), pointer :: block
+
+    type (MPAS_timeInterval_type) :: timeStepESMF
+
+    character(len=StrKIND) :: timeStamp
+
+    real (kind=RKIND) :: dtSim
+
+    integer :: err
+
+    ! convert config_dt to real
+    call mpas_set_timeInterval(timeStepESMF, timeString=config_dt,ierr=err)
+    call mpas_get_timeInterval(timeStepESMF, dt=dtSim)
+
+    ! use the forcing layer to get data
+    call MPAS_forcing_get_forcing(&
+         forcingGroupHead, &               ! forcingGroupHead
+         "ocn_particle_forcing", &      ! forcingGroupName
+         streamManager, &                  ! streamManager
+         dtSim)                            ! dt
+
+    call MPAS_forcing_get_forcing_time(&
+         forcingGroupHead, &               ! forcingGroupHead
+         "ocn_particle_forcing", &      ! forcingGroupName
+         currentForcingTime)               ! forcingTime
+    !call mpas_get_time(curr_time=currentForcingTime, dateTimeString=timeStamp, ierr=err)
+    !call mpas_log_write('Forcing time ' // trim(timeStamp))
+
+ !!! Uncomment and modify this section to add any modifications t the particle forcing after loading.
+   ! ! perform post forcing
+   ! block => domain % blocklist
+   ! do while (associated(block))
+   !
+   !    ! apply drag law to compute wind stress from wind speed
+   !    if (trim(config_time_varying_atmospheric_forcing_type) == "WINDPRES") then
+   !       call post_atmospheric_forcing(block)
+   !    endif
+   !
+   !    block => block % next
+   ! end do
+  end subroutine particle_forcing!}}}
+
 
 end module ocn_time_varying_forcing
 ! vim: foldmethod=marker
