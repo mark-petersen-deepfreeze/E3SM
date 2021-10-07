@@ -1839,8 +1839,8 @@
 				input_interval="none"
 				packages="timeVaryingParticleForcingPKG"
 				immutable="true">
-			<var name="particleSpeedU"/>
-			<var name="particleSpeedV"/>
+			<var name="particleVelocityZonal"/>
+			<var name="particleVelocityMeridional"/>
 		</stream>
 
 		<!-- Diagnostics streams for forward mode -->
@@ -3548,13 +3548,13 @@
 			description="The elevation of the interface between land ice and the ocean."
 			packages="timeVaryingLandIceForcingPKG"
 		/>
-		<var name="particleSpeedU" type="real" dimensions="nCells Time" units="m/s"
-			description="Zonal (eastward) component of wind speed at cell centers from coupler. Positive easthward."
-			packages="timeVaryingParticleForcingPKG"
+		<var name="particleVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="component of horizontal velocity in the eastward direction"
+			 packages="timeVaryingParticleForcingPKG"
 		/>
-		<var name="particleSpeedV" type="real" dimensions="nCells Time" units="m/s"
-			description="Meridional (northward) component of wind speed at cell centers from coupler. Positive northward."
-			packages="timeVaryingParticleForcingPKG"
+		<var name="particleVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="component of horizontal velocity in the northward direction"
+			 packages="timeVaryingParticleForcingPKG"
 		/>
 	</var_struct>
 	<var_struct name="scratch" time_levs="1">

@@ -576,6 +576,7 @@ contains
     type (domain_type) :: domain
  ! 
  !   select case (trim(config_time_varying_atmospheric_forcing_type))
+
  !     case ("WINDPRES")
  !        call init_atmospheric_forcing_WINDPRES(domain)
  !     case default
