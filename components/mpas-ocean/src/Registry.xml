@@ -991,6 +991,14 @@
 					description="Dimensionless bottom drag coefficient, $c_{drag}$."
 					possible_values="any positive real, typically 1.0e-3"
 		/>
+		<nml_option name="config_use_AOT" type="logical" default_value=".false." units="unitless"
+					description="If true, AOT forcing is used on the momentum equation."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_AOT_coeff" type="real" default_value="1.0e-3" units="unitless"
+					description="Feedback control parameter, mu, for AOT algorithm."
+					possible_values="any positive real."
+		/>
 		<nml_option name="config_use_topographic_wave_drag" type="logical" default_value=".false." units="unitless"
 					description="If true, topographic wave drag is used on the momentum equation."
 					possible_values=".true. or .false."
@@ -1330,6 +1338,10 @@
 		/>
 		<nml_option name="config_disable_vel_explicit_bottom_drag" type="logical" default_value=".false." units="unitless"
 					description="Disables tendencies on the velocity field from explicit bottom drag"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_disable_vel_AOT" type="logical" default_value=".false." units="unitless"
+					description="Disables tendencies on the velocity field from AOT"
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_disable_vel_vmix" type="logical" default_value=".false." units="unitless"
@@ -1832,6 +1844,7 @@
 			<var name="landIceFractionForcing"/>
 			<var name="landIceDraftForcing"/>
 		</stream>
+<!--
 		<stream name="particle_forcing"
 				type="input"
 				filename_template="particle_forcing.nc"
@@ -1842,7 +1855,7 @@
 			<var name="particleVelocityZonal"/>
 			<var name="particleVelocityMeridional"/>
 		</stream>
-
+-->
 		<!-- Diagnostics streams for forward mode -->
 		<stream name="additional_output"
 				type="none"

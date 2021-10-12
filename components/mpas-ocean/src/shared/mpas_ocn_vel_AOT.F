@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_vel_forcing_explicit_bottom_drag
+!  ocn_vel_forcing_AOT
 !
 !> \brief MPAS ocean explicit bottom drag
 !> \author Mark Petersen
@@ -18,7 +18,7 @@
 !
 !-----------------------------------------------------------------------
 
-module ocn_vel_forcing_explicit_bottom_drag
+module ocn_vel_AOT
 
    use mpas_timer
 
@@ -43,8 +43,8 @@ module ocn_vel_forcing_explicit_bottom_drag
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_vel_forcing_explicit_bottom_drag_tend, &
-             ocn_vel_forcing_explicit_bottom_drag_init
+   public :: ocn_vel_AOT_tend, &
+             ocn_vel_AOT_init
 
    !--------------------------------------------------------------------
    !
@@ -53,10 +53,10 @@ module ocn_vel_forcing_explicit_bottom_drag
    !--------------------------------------------------------------------
 
    logical :: &
-      explicitBottomDragOff  ! on/off switch for explicit bottom drag
+      aotOff  ! on/off switch for explicit bottom drag
 
    real (kind=RKIND) :: &
-      dragCoeff          ! drag coefficient
+      aotCoeff          ! drag coefficient
 
 !***********************************************************************
 
@@ -64,7 +64,7 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_vel_forcing_explicit_bottom_drag_tend
+!  routine ocn_vel_forcing_AOT_tend
 !
 !> \brief   Computes tendency term from explicit bottom drag
 !> \author  Mark Petersen
@@ -75,7 +75,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_forcing_explicit_bottom_drag_tend(normVelocity, &
+   subroutine ocn_vel_AOT_tend(normVelocity, &
                                  KECell, layerThickEdge, tend, err) !{{{
 
       !-----------------------------------------------------------------
@@ -117,7 +117,7 @@ contains
       !*** Otherwise start timer
 
       err = 0
-      if (explicitBottomDragOff) return
+      if (aotOff) return
       call mpas_timer_start('vel explicit bottom drag')
 
       ! Explicit bottom drag term:
@@ -142,7 +142,7 @@ contains
         k =  maxLevelEdgeTop(iEdge)
 
         if (k > 0) then
-           tend(k,iEdge) = tend(k,iEdge) - dragCoeff* &
+           tend(k,iEdge) = tend(k,iEdge) - aotCoeff* &
                            sqrt(KECell(k,cell1) + KECell(k,cell2))* &
                            normVelocity(k,iEdge)/layerThickEdge(k,iEdge)
         end if
@@ -157,11 +157,11 @@ contains
 
    !--------------------------------------------------------------------
 
-   end subroutine ocn_vel_forcing_explicit_bottom_drag_tend!}}}
+   end subroutine ocn_vel_AOT_tend!}}}
 
 !***********************************************************************
 !
-!  routine ocn_vel_forcing_explicit_bottom_drag_init
+!  routine ocn_vel_forcing_AOT_init
 !
 !> \brief   Initializes ocean explicit bottom drag forcing
 !> \author  Mark Petersen
@@ -172,7 +172,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_forcing_explicit_bottom_drag_init(err)!{{{
+   subroutine ocn_vel_AOT_init(err)!{{{
 
       !-----------------------------------------------------------------
       ! output variables
@@ -187,28 +187,29 @@ contains
       !*** Initialize return error code and set module defaults
       err = 0
 
-      explicitBottomDragOff  = .true.
-      dragCoeff = 0.0_RKIND
+      aotOff  = .true.
+      aotCoeff = 0.0_RKIND
+
 
       !*** Reset values based on input model configuration
 
-      if (config_use_explicit_bottom_drag) then
-         explicitBottomDragOff = .false.
-         dragCoeff = config_explicit_bottom_drag_coeff
+      if (config_use_AOT) then
+         aotOff = .false.
+         aotCoeff = config_AOT_coeff
       endif
 
-      if (config_disable_vel_explicit_bottom_drag) then
-         explicitBottomDragOff = .true.
-         dragCoeff = 0.0_RKIND
+      if (config_disable_vel_AOT) then
+         aotOff = .true.
+         aotCoeff = 0.0_RKIND
       endif
 
    !--------------------------------------------------------------------
 
-   end subroutine ocn_vel_forcing_explicit_bottom_drag_init!}}}
+   end subroutine ocn_vel_AOT_init!}}}
 
 !***********************************************************************
 
-end module ocn_vel_forcing_explicit_bottom_drag
+end module ocn_vel_AOT
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ! vim: foldmethod=marker
