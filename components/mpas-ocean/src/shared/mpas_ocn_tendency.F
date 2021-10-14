@@ -63,6 +63,7 @@ module ocn_tendency
    use ocn_vmix
    use ocn_wetting_drying
    use ocn_vel_tidal_potential
+   use ocn_vel_AOT
 
    implicit none
    private
@@ -425,6 +426,10 @@ contains
       call ocn_vel_forcing_tend(normalVelocity, sfcFlxAttCoeff, &
                                 sfcStress, kineticEnergyCell, &
                                 layerThickEdge, tendVel, err)
+
+
+      ! Add AOT forcing
+      call ocn_vel_AOT(forcingPool, tendVel, err)
 
       ! vertical mixing treated implicitly in a later routine
       ! adjust total velocity tendency based on wetting/drying
