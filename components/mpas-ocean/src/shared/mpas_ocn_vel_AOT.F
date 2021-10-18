@@ -27,6 +27,7 @@ module ocn_vel_AOT
    use ocn_mesh
    use ocn_forcing
 
+   use ocn_diagnostics_variables
    implicit none
    private
    save
@@ -75,18 +76,23 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_AOT_tend(normVelocity, &
-                                 KECell, layerThickEdge, tend, err) !{{{
+   subroutine ocn_vel_AOT_tend(forcingPool, tend, err)
+!normVelocity, KECell, layerThickEdge, tend, err) !{{{
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-         normVelocity,  &!< [in] normal velocity
-         KECell,        &!< [in] kinetic energy at cell
-         layerThickEdge  !< [in] layer thickness at edge
-
+!      type (domain_type) intent(inout) :: domain
+      type (mpas_pool_type) intent(in) :: forcingPool
+!!      real (kind=RKIND), dimension(:,:), intent(in) :: &
+!!         normVelocity,  &!< [in] normal velocity
+!!         KECell,        &!< [in] kinetic energy at cell
+!!         layerThickEdge  !< [in] layer thickness at edge
+!      real (kind=RKIND), dimension(:,:), pointer, intent(in) :: &
+!          velocityMeridional, &!< [in] meridional velocity at cell centers
+!          velocityZonal,       &!< [in] zonal velocity at cell centers 
+!          velocityMeridionalObs, &!< [in] meridional velocity at cell centers
+!          velocityZonalObs        !< [in] zonal velocity at cell centers 
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
@@ -108,6 +114,10 @@ contains
          iEdge,      &! loop index for edge loop
          k,          &! vertical index of lowest active layer at edge
          cell1, cell2 ! neighbor cell addresses across edge
+         
+      real (kind=RKIND), dimension(:,:), pointer :: &
+         velocityMeridionalObs, &!< [in] meridional velocity at cell centers
+         velocityZonalObs        !< [in] zonal velocity at cell centers 
 
       ! End preamble
       !-----------------------------------------------------------------
@@ -127,25 +137,34 @@ contains
       ! momentum mixing, and is explicit if both |u| and u are chosen to be at
       ! time level n.
 
+      call mpas_pool_get_array(forcingPool, 'velocityZonalObs', velocityZonalObs)
+      call mpas_pool_get_array(forcingPool, 'velocityMeridionalObs', velocityMeridionalObs)
+
+
+
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(cellsOnEdge, maxLevelEdgeTop, KECell, &
-      !$acc            tend, normVelocity, layerThickEdge) &
+      !$acc            tend, velocityMeridional, velocityZonal, &
+      !$acc            velocityMeridionalObs, velocityZonalObs) &
       !$acc    private(k, cell1, cell2)
 #else
       !$omp parallel
-      !$omp do schedule(runtime) private(k, cell1, cell2)
+      !$omp do schedule(runtime) private(, cell1, cell2)
 #endif
       do iEdge = 1, nEdgesOwned
         cell1 = cellsOnEdge(1,iEdge)
         cell2 = cellsOnEdge(2,iEdge)
-        k =  maxLevelEdgeTop(iEdge)
+!        k =  maxLevelEdgeTop(iEdge)
 
-        if (k > 0) then
-           tend(k,iEdge) = tend(k,iEdge) - aotCoeff* &
-                           sqrt(KECell(k,cell1) + KECell(k,cell2))* &
-                           normVelocity(k,iEdge)/layerThickEdge(k,iEdge)
-        end if
+!        if (k > 0) then
+!           tend(k,iEdge) = tend(k,iEdge) - aotCoeff* &
+!                           sqrt(KECell(k,cell1) + KECell(k,cell2))* &
+!                           normVelocity(k,iEdge)/layerThickEdge(k,iEdge)
+!        end if
+        tend(k,iEdge) = tend(k,iEdge) + aotCoeff*&
+          (  cos(angleEdge(iEdge)) * (0.5*(velocityMeridionalObs(k,cell1) - velocityMeridional(k,cell1) + velocityMeridionalObs(k,cell2) - velocityMeridional(k,cell2))) + &
+             sin(angleEdge(iEdge)) * (0.5*(velocityZonalObs(k,cell1) - velocityZonal(k,cell1) + velocityZonalObs(k,cell2) - velocityZonal(k,cell2)))     )
 
       enddo
 #ifndef MPAS_OPENACC

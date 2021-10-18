@@ -27,6 +27,7 @@ module ocn_vel_forcing
    use ocn_vel_forcing_surface_stress
    use ocn_vel_forcing_explicit_bottom_drag
    use ocn_vel_forcing_topographic_wave_drag
+!   use ocn_vel_forcing_AOT
 
    implicit none
    private
@@ -129,7 +130,9 @@ contains
 
       call ocn_vel_forcing_topographic_wave_drag_tend(normalVelocity, &
                    tend, err1)
+      err = ior(err, err1)
 
+      call ocn_vel_AOT(tend, err1)
       err = ior(err, err1)
    !--------------------------------------------------------------------
 
