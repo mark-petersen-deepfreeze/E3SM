@@ -83,7 +83,7 @@ contains
       ! input variables
       !-----------------------------------------------------------------
 !      type (domain_type) intent(inout) :: domain
-      type (mpas_pool_type) intent(in) :: forcingPool
+      type (mpas_pool_type), intent(in) :: forcingPool
 !!      real (kind=RKIND), dimension(:,:), intent(in) :: &
 !!         normVelocity,  &!< [in] normal velocity
 !!         KECell,        &!< [in] kinetic energy at cell
