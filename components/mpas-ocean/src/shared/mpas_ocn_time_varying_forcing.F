@@ -65,8 +65,8 @@ contains
       call init_land_ice_forcing(domain)
     endif
 
-    if (config_use_time_varying_particle_forcing) then
-      call init_particle_forcing(domain)
+    if (config_use_time_varying_aot_forcing) then
+      call init_aot_forcing(domain)
     endif
 
     ! init other forcings, to be added later as needed
@@ -223,9 +223,9 @@ contains
 
     endif
 
-    if (config_use_time_varying_particle_forcing) then
+    if (config_use_time_varying_aot_forcing) then
 
-        call particle_forcing(&
+        call aot_forcing(&
              streamManager, &
              domain, &
              simulationClock)
@@ -561,7 +561,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_particle_forcing
+!  init_aot_forcing
 !
 !> \brief
 !> \author Collin Victor, LANL
@@ -571,7 +571,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine init_particle_forcing(domain)!{{{
+  subroutine init_aot_forcing(domain)!{{{
 
     type (domain_type) :: domain
  ! 
@@ -580,19 +580,19 @@ contains
  !     case ("WINDPRES")
  !        call init_atmospheric_forcing_WINDPRES(domain)
  !     case default
- !   call mpas_log_write("Particle forcing type unknown: "//trim(config_time_varying_atmospheric_forcing_type), MPAS_LOG_CRIT)
+ !   call mpas_log_write("aot forcing type unknown: "//trim(config_time_varying_atmospheric_forcing_type), MPAS_LOG_CRIT)
  !   end select
 
-  end subroutine init_particle_forcing!}}}
+  end subroutine init_aot_forcing!}}}
 
 
 
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  particle_forcing
+!  aot_forcing
 !
-!> \brief Adds forcing from LIGHT particle data.
+!> \brief Adds forcing from aot data.
 !> \author Collin Victor, LANL
 !> \date 9/22/2021
 !> \details
@@ -601,7 +601,7 @@ contains
 !-----------------------------------------------------------------------
 
 
-  subroutine particle_forcing(streamManager, domain, simulationClock)!{{{
+  subroutine aot_forcing(streamManager, domain, simulationClock)!{{{
 
     type (MPAS_streamManager_type), intent(inout) :: streamManager
 
@@ -628,18 +628,18 @@ contains
     ! use the forcing layer to get data
     call MPAS_forcing_get_forcing(&
          forcingGroupHead, &               ! forcingGroupHead
-         "ocn_particle_forcing", &      ! forcingGroupName
+         "ocn_aot_forcing", &      ! forcingGroupName
          streamManager, &                  ! streamManager
          dtSim)                            ! dt
 
     call MPAS_forcing_get_forcing_time(&
          forcingGroupHead, &               ! forcingGroupHead
-         "ocn_particle_forcing", &      ! forcingGroupName
+         "ocn_aot_forcing", &      ! forcingGroupName
          currentForcingTime)               ! forcingTime
     !call mpas_get_time(curr_time=currentForcingTime, dateTimeString=timeStamp, ierr=err)
     !call mpas_log_write('Forcing time ' // trim(timeStamp))
 
- !!! Uncomment and modify this section to add any modifications t the particle forcing after loading.
+ !!! Uncomment and modify this section to add any modifications t the aot forcing after loading.
    ! ! perform post forcing
    ! block => domain % blocklist
    ! do while (associated(block))
@@ -651,7 +651,7 @@ contains
    !
    !    block => block % next
    ! end do
-  end subroutine particle_forcing!}}}
+  end subroutine aot_forcing!}}}
 
 
 end module ocn_time_varying_forcing
