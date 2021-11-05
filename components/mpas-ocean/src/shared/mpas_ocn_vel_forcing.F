@@ -27,7 +27,7 @@ module ocn_vel_forcing
    use ocn_vel_forcing_surface_stress
    use ocn_vel_forcing_explicit_bottom_drag
    use ocn_vel_forcing_topographic_wave_drag
-!   use ocn_vel_forcing_AOT
+   use ocn_vel_aot
 
    implicit none
    private
@@ -132,8 +132,8 @@ contains
                    tend, err1)
       err = ior(err, err1)
 
-      call ocn_vel_AOT(tend, err1)
-      err = ior(err, err1)
+!      call ocn_vel_AOT(tend, err1)
+!      err = ior(err, err1)
    !--------------------------------------------------------------------
 
    end subroutine ocn_vel_forcing_tend!}}}
@@ -197,6 +197,13 @@ contains
          err = err2
       endif
 
+      call ocn_vel_aot_init(err2)
+      if (err2 /= 0) then
+         call mpas_log_write( &
+            'vel_forcing_init encountered error in aot', &
+             MPAS_LOG_ERR)
+         err = err2
+      endif
    !--------------------------------------------------------------------
 
    end subroutine ocn_vel_forcing_init!}}}

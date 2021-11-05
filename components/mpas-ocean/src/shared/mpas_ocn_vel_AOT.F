@@ -18,7 +18,7 @@
 !
 !-----------------------------------------------------------------------
 
-module ocn_vel_AOT
+module ocn_vel_aot
 
    use mpas_timer
 
@@ -44,8 +44,8 @@ module ocn_vel_AOT
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_vel_AOT_tend, &
-             ocn_vel_AOT_init
+   public :: ocn_vel_aot_tend, &
+             ocn_vel_aot_init
 
    !--------------------------------------------------------------------
    !
@@ -76,7 +76,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_AOT_tend(forcingPool, tend, err)
+   subroutine ocn_vel_aot_tend(forcingPool, tend, err)
 !normVelocity, KECell, layerThickEdge, tend, err) !{{{
 
       !-----------------------------------------------------------------
@@ -128,8 +128,8 @@ contains
 
       err = 0
       if (aotOff) return
-      call mpas_timer_start('vel explicit bottom drag')
-
+      call mpas_timer_start('AOT u-v term')
+      
       ! Explicit bottom drag term:
       ! du/dt = ... - c |u| u / h
       ! appied to bottom layer only.
@@ -139,13 +139,24 @@ contains
 
       call mpas_pool_get_array(forcingPool, 'velocityZonalObs', velocityZonalObs)
       call mpas_pool_get_array(forcingPool, 'velocityMeridionalObs', velocityMeridionalObs)
+      
+!      write(*,*) "velocicyZonalObs"
+!      write(*,*) velocityZonalObs(1,1:10)
+!      write(*,*) "velocicyMeridionalObs"
+!      write(*,*) velocityMeridionalObs(1,1:10)
+!      write(*,*) "velocicyZonal"
+!      write(*,*) velocityZonal(1,1:10)
+!      write(*,*) "velocicyMeridional"
+!      write(*,*) velocityMeridional(1,1:10)
+!      write(*,*) "mu"
+!      write(*,*) aotCoeff
 
 
-
+!      call mpas_log_write("Testing observational data loading: $r", MPAS_LOG_WARN, realArgs=(/ velocityZonalObs(1,1,1)))
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
-      !$acc    present(cellsOnEdge, maxLevelEdgeTop, KECell, &
-      !$acc            tend, velocityMeridional, velocityZonal, &
+      !$acc    present(cellsOnEdge, tend, &
+      !$acc            velocityMeridional, velocityZonal, &
       !$acc            velocityMeridionalObs, velocityZonalObs) &
       !$acc    private(k, cell1, cell2)
 #else
@@ -156,27 +167,27 @@ contains
         cell1 = cellsOnEdge(1,iEdge)
         cell2 = cellsOnEdge(2,iEdge)
 !        k =  maxLevelEdgeTop(iEdge)
-
+        do k = 1, maxLevelEdgeTop(iEdge)
 !        if (k > 0) then
 !           tend(k,iEdge) = tend(k,iEdge) - aotCoeff* &
 !                           sqrt(KECell(k,cell1) + KECell(k,cell2))* &
 !                           normVelocity(k,iEdge)/layerThickEdge(k,iEdge)
 !        end if
-        tend(k,iEdge) = tend(k,iEdge) + aotCoeff*&
-          (  cos(angleEdge(iEdge)) * (0.5*(velocityMeridionalObs(k,cell1) - velocityMeridional(k,cell1) + velocityMeridionalObs(k,cell2) - velocityMeridional(k,cell2))) + &
-             sin(angleEdge(iEdge)) * (0.5*(velocityZonalObs(k,cell1) - velocityZonal(k,cell1) + velocityZonalObs(k,cell2) - velocityZonal(k,cell2)))     )
-
+          tend(k,iEdge) = tend(k,iEdge) + aotCoeff*&
+            (  sin(angleEdge(iEdge)) * (0.5*(velocityMeridionalObs(k,cell1) - velocityMeridional(k,cell1) + velocityMeridionalObs(k,cell2) - velocityMeridional(k,cell2))) + &
+               cos(angleEdge(iEdge)) * (0.5*(velocityZonalObs(k,cell1) - velocityZonal(k,cell1) + velocityZonalObs(k,cell2) - velocityZonal(k,cell2)))     )
+        enddo
       enddo
 #ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
 #endif
 
-      call mpas_timer_stop('vel explicit bottom drag')
+      call mpas_timer_stop('AOT u-v term')
 
    !--------------------------------------------------------------------
 
-   end subroutine ocn_vel_AOT_tend!}}}
+   end subroutine ocn_vel_aot_tend!}}}
 
 !***********************************************************************
 !
@@ -191,7 +202,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_AOT_init(err)!{{{
+   subroutine ocn_vel_aot_init(err)!{{{
 
       !-----------------------------------------------------------------
       ! output variables
@@ -212,23 +223,27 @@ contains
 
       !*** Reset values based on input model configuration
 
-      if (config_use_AOT) then
+      if (config_use_aot) then
          aotOff = .false.
-         aotCoeff = config_AOT_coeff
+         aotCoeff = config_aot_coeff
+!         write(*,*) "here"
       endif
 
-      if (config_disable_vel_AOT) then
+      if (config_disable_vel_aot) then
          aotOff = .true.
          aotCoeff = 0.0_RKIND
+!         write(*,*) "no, here"
       endif
-
+      
+!      write(*,*) "Mu:"
+!      write(*,*) aotCoeff
    !--------------------------------------------------------------------
 
-   end subroutine ocn_vel_AOT_init!}}}
+   end subroutine ocn_vel_aot_init!}}}
 
 !***********************************************************************
 
-end module ocn_vel_AOT
+end module ocn_vel_aot
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ! vim: foldmethod=marker

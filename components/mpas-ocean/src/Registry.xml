@@ -991,11 +991,11 @@
 					description="Dimensionless bottom drag coefficient, $c_{drag}$."
 					possible_values="any positive real, typically 1.0e-3"
 		/>
-		<nml_option name="config_use_AOT" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_use_aot" type="logical" default_value=".false." units="unitless"
 					description="If true, AOT forcing is used on the momentum equation."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AOT_coeff" type="real" default_value="1.0e-3" units="unitless"
+		<nml_option name="config_aot_coeff" type="real" default_value="1.0e-3" units="unitless"
 					description="Feedback control parameter, mu, for AOT algorithm."
 					possible_values="any positive real."
 		/>
@@ -1340,7 +1340,7 @@
 					description="Disables tendencies on the velocity field from explicit bottom drag"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_disable_vel_AOT" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_disable_vel_aot" type="logical" default_value=".false." units="unitless"
 					description="Disables tendencies on the velocity field from AOT"
 					possible_values=".true. or .false."
 		/>
@@ -3146,12 +3146,12 @@
 
 			 ********************************************************************* -->
    
-		<var name="velocityMeridionalObs" type="real" dimensions="nCells" units="m s^{-1}"
-			 description="Meridional velocity from observational data, at cell centers."
+		<var name="velocityZonalObs" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="component of horizontal velocity in the eastward direction"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="velocityZonalObs" type="real" dimensions="nCells" units="m s^{-1}"
-			 description="Zonal velocity from observational data, at cell centers."
+		<var name="velocityMeridionalObs" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="component of horizontal velocity in the northward direction"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="surfaceStress" type="real" dimensions="nEdges Time" units="N m^{-2}"
