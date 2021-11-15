@@ -50,6 +50,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: density
    real (kind=RKIND), dimension(:,:), pointer :: displaceddensity
    real (kind=RKIND), dimension(:,:), pointer :: potentialdensity
+   real (kind=RKIND), dimension(:,:), pointer :: sfcParcelDensity
    real (kind=RKIND), dimension(:,:), pointer :: montgomeryPotential
    real (kind=RKIND), dimension(:,:), pointer :: pressure
    real (kind=RKIND), dimension(:,:), pointer :: thermExpCoeff
@@ -543,6 +544,8 @@ contains
                 displacedDensity)
       call mpas_pool_get_array(diagnosticsPool, 'potentialDensity', &
                 potentialDensity)
+      call mpas_pool_get_array(diagnosticsPool, 'sfcParcelDensity', &
+                sfcParcelDensity)
       call mpas_pool_get_array(diagnosticsPool, &
                'inSituThermalExpansionCoeff', &
                 thermExpCoeff)
@@ -808,6 +811,7 @@ contains
       !$acc                   sfcFlxAttCoeff,                          &
       !$acc                   surfacePressure,                         &
       !$acc                   potentialDensity,                        &
+      !$acc                   sfcParcelDensity,                        &
       !$acc                   displacedDensity,                        &
       !$acc                   boundaryLayerDepth,                      &
       !$acc                   salineContractCoeff,                     &
@@ -1044,6 +1048,7 @@ contains
       !$acc                   sfcFlxAttCoeff,                          &
       !$acc                   surfacePressure,                         &
       !$acc                   potentialDensity,                        &
+      !$acc                   sfcParcelDensity,                        &
       !$acc                   displacedDensity,                        &
       !$acc                   boundaryLayerDepth,                      &
       !$acc                   salineContractCoeff,                     &
@@ -1229,6 +1234,7 @@ contains
               sfcFlxAttCoeff,                          &
               surfacePressure,                         &
               potentialDensity,                        &
+              sfcParcelDensity,                        &
               displacedDensity,                        &
               boundaryLayerDepth,                      &
               salineContractCoeff,                     &
