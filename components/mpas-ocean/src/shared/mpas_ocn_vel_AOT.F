@@ -26,7 +26,7 @@ module ocn_vel_aot
    use ocn_config
    use ocn_mesh
    use ocn_forcing
-
+!   use ocn_time_varying_forcing
    use ocn_diagnostics_variables
    implicit none
    private
@@ -76,14 +76,14 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_aot_tend(forcingPool, tend, err)
+   subroutine ocn_vel_aot_tend(timeVaryingForcingPool, tend, err)
 !normVelocity, KECell, layerThickEdge, tend, err) !{{{
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
 !      type (domain_type) intent(inout) :: domain
-      type (mpas_pool_type), intent(in) :: forcingPool
+      type (mpas_pool_type), intent(in) :: timeVaryingForcingPool
 !!      real (kind=RKIND), dimension(:,:), intent(in) :: &
 !!         normVelocity,  &!< [in] normal velocity
 !!         KECell,        &!< [in] kinetic energy at cell
@@ -137,8 +137,8 @@ contains
       ! momentum mixing, and is explicit if both |u| and u are chosen to be at
       ! time level n.
 
-      call mpas_pool_get_array(forcingPool, 'velocityZonalObs', velocityZonalObs)
-      call mpas_pool_get_array(forcingPool, 'velocityMeridionalObs', velocityMeridionalObs)
+      call mpas_pool_get_array(timeVaryingForcingPool, 'velocityZonalObs', velocityZonalObs)
+      call mpas_pool_get_array(timeVaryingForcingPool, 'velocityMeridionalObs', velocityMeridionalObs)
       
 !      write(*,*) "velocicyZonalObs"
 !      write(*,*) velocityZonalObs(1,1:10)

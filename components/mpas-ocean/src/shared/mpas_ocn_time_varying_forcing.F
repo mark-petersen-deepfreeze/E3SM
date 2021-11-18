@@ -583,6 +583,52 @@ contains
  !   call mpas_log_write("aot forcing type unknown: "//trim(config_time_varying_atmospheric_forcing_type), MPAS_LOG_CRIT)
  !   end select
 
+    ! create the atmospheric forcing group
+    call MPAS_forcing_init_group(&
+         forcingGroupHead, &                     ! forcingGroupHead
+         "ocn_aot_forcing", &            ! forcingGroupName
+         domain, &                               ! domain
+         config_time_varying_atmospheric_forcing_start_time, &            ! startTimeStr
+         config_time_varying_atmospheric_forcing_cycle_start, &           ! forcingCycleStart
+         config_time_varying_atmospheric_forcing_cycle_duration, &        ! forcingCycleDuration
+         config_do_restart)!, &                  ! restart
+         !.false.)                               ! forcingCycleStartInclusive
+
+    ! windSpeedU init
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &               ! streamManager
+         forcingGroupHead, &                     ! forcingGroupHead
+         "ocn_aot_forcing", &            ! forcingGroupName
+         "windSpeedU", &                         ! forcingName
+         "aot_forcing", &                ! forcingStreamID
+         "timeVaryingForcing", &                 ! poolname
+         "velocityZonalObs", &                         ! fieldname
+         "linear", &                             ! interpolationType
+         config_time_varying_aot_forcing_reference_time, &                 ! forcingReferenceTimeStr
+         config_time_varying_aot_forcing_interval)!,                      ! forcingIntervalStr
+         !"next")                                ! forcingInitializationType
+
+    ! windSpeedV init
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         forcingGroupHead, &
+         "ocn_aot_forcing", &
+         "velocityMeridionalObs", &
+         "aot_forcing", &
+         "timeVaryingForcing", &
+         "velocityMeridionalObs", &
+         "linear", &
+         config_time_varying_atmospheric_forcing_reference_time, &
+         config_time_varying_atmospheric_forcing_interval)!, &
+         !"next")
+
+    call MPAS_forcing_init_field_data(&
+         forcingGroupHead, &                     ! forcingGroupHead
+         "ocn_aot_forcing", &            ! forcingGroupName
+         domain % streamManager, &               ! streamManager
+         config_do_restart, &                    ! restart
+         .false.)                                ! interpolateAtInit
+    ! atmosphericPressure init
   end subroutine init_aot_forcing!}}}
 
 
