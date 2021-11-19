@@ -575,31 +575,31 @@ contains
 
     type (domain_type) :: domain
  ! 
- !   select case (trim(config_time_varying_atmospheric_forcing_type))
+ !   select case (trim(config_time_varying_aot_forcing_type))
 
  !     case ("WINDPRES")
- !        call init_atmospheric_forcing_WINDPRES(domain)
+ !        call init_aot_forcing_WINDPRES(domain)
  !     case default
- !   call mpas_log_write("aot forcing type unknown: "//trim(config_time_varying_atmospheric_forcing_type), MPAS_LOG_CRIT)
+ !   call mpas_log_write("aot forcing type unknown: "//trim(config_time_varying_aot_forcing_type), MPAS_LOG_CRIT)
  !   end select
 
-    ! create the atmospheric forcing group
+    ! create the aot forcing group
     call MPAS_forcing_init_group(&
          forcingGroupHead, &                     ! forcingGroupHead
          "ocn_aot_forcing", &            ! forcingGroupName
          domain, &                               ! domain
-         config_time_varying_atmospheric_forcing_start_time, &            ! startTimeStr
-         config_time_varying_atmospheric_forcing_cycle_start, &           ! forcingCycleStart
-         config_time_varying_atmospheric_forcing_cycle_duration, &        ! forcingCycleDuration
+         config_time_varying_aot_forcing_start_time, &            ! startTimeStr
+         config_time_varying_aot_forcing_cycle_start, &           ! forcingCycleStart
+         config_time_varying_aot_forcing_cycle_duration, &        ! forcingCycleDuration
          config_do_restart)!, &                  ! restart
          !.false.)                               ! forcingCycleStartInclusive
 
-    ! windSpeedU init
+    ! velocityZonalObs init
     call MPAS_forcing_init_field(&
          domain % streamManager, &               ! streamManager
          forcingGroupHead, &                     ! forcingGroupHead
          "ocn_aot_forcing", &            ! forcingGroupName
-         "windSpeedU", &                         ! forcingName
+         "velocityZonalObs", &                         ! forcingName
          "aot_forcing", &                ! forcingStreamID
          "timeVaryingForcing", &                 ! poolname
          "velocityZonalObs", &                         ! fieldname
@@ -608,7 +608,7 @@ contains
          config_time_varying_aot_forcing_interval)!,                      ! forcingIntervalStr
          !"next")                                ! forcingInitializationType
 
-    ! windSpeedV init
+    ! velocityMeridionalObs init
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          forcingGroupHead, &
@@ -618,8 +618,8 @@ contains
          "timeVaryingForcing", &
          "velocityMeridionalObs", &
          "linear", &
-         config_time_varying_atmospheric_forcing_reference_time, &
-         config_time_varying_atmospheric_forcing_interval)!, &
+         config_time_varying_aot_forcing_reference_time, &
+         config_time_varying_aot_forcing_interval)!, &
          !"next")
 
     call MPAS_forcing_init_field_data(&
@@ -628,7 +628,7 @@ contains
          domain % streamManager, &               ! streamManager
          config_do_restart, &                    ! restart
          .false.)                                ! interpolateAtInit
-    ! atmosphericPressure init
+    ! aotPressure init
   end subroutine init_aot_forcing!}}}
 
 
@@ -691,8 +691,8 @@ contains
    ! do while (associated(block))
    !
    !    ! apply drag law to compute wind stress from wind speed
-   !    if (trim(config_time_varying_atmospheric_forcing_type) == "WINDPRES") then
-   !       call post_atmospheric_forcing(block)
+   !    if (trim(config_time_varying_aot_forcing_type) == "WINDPRES") then
+   !       call post_aot_forcing(block)
    !    endif
    !
    !    block => block % next

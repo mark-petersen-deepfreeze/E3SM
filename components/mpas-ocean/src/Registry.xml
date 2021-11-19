@@ -1844,7 +1844,6 @@
 			<var name="landIceFractionForcing"/>
 			<var name="landIceDraftForcing"/>
 		</stream>
-<!--
 		<stream name="aot_forcing"
 				type="input"
 				filename_template="aot_forcing.nc"
@@ -1855,7 +1854,7 @@
 			<var name="velocityZonalObs"/>
 			<var name="velocityMeridionalObs"/>
 		</stream>
--->
+
 		<!-- Diagnostics streams for forward mode -->
 		<stream name="additional_output"
 				type="none"
