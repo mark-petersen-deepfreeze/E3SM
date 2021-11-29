@@ -65,8 +65,8 @@ contains
       call init_land_ice_forcing(domain)
     endif
 
-    if (config_use_time_varying_particle_forcing) then
-      call init_particle_forcing(domain)
+    if (config_use_time_varying_aot_forcing) then
+      call init_aot_forcing(domain)
     endif
 
     ! init other forcings, to be added later as needed
@@ -223,9 +223,9 @@ contains
 
     endif
 
-    if (config_use_time_varying_particle_forcing) then
+    if (config_use_time_varying_aot_forcing) then
 
-        call particle_forcing(&
+        call aot_forcing(&
              streamManager, &
              domain, &
              simulationClock)
@@ -561,7 +561,7 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_particle_forcing
+!  init_aot_forcing
 !
 !> \brief
 !> \author Collin Victor, LANL
@@ -571,28 +571,74 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine init_particle_forcing(domain)!{{{
+  subroutine init_aot_forcing(domain)!{{{
 
     type (domain_type) :: domain
  ! 
- !   select case (trim(config_time_varying_atmospheric_forcing_type))
+ !   select case (trim(config_time_varying_aot_forcing_type))
 
  !     case ("WINDPRES")
- !        call init_atmospheric_forcing_WINDPRES(domain)
+ !        call init_aot_forcing_WINDPRES(domain)
  !     case default
- !   call mpas_log_write("Particle forcing type unknown: "//trim(config_time_varying_atmospheric_forcing_type), MPAS_LOG_CRIT)
+ !   call mpas_log_write("aot forcing type unknown: "//trim(config_time_varying_aot_forcing_type), MPAS_LOG_CRIT)
  !   end select
 
-  end subroutine init_particle_forcing!}}}
+    ! create the aot forcing group
+    call MPAS_forcing_init_group(&
+         forcingGroupHead, &                     ! forcingGroupHead
+         "ocn_aot_forcing", &            ! forcingGroupName
+         domain, &                               ! domain
+         config_time_varying_aot_forcing_start_time, &            ! startTimeStr
+         config_time_varying_aot_forcing_cycle_start, &           ! forcingCycleStart
+         config_time_varying_aot_forcing_cycle_duration, &        ! forcingCycleDuration
+         config_do_restart)!, &                  ! restart
+         !.false.)                               ! forcingCycleStartInclusive
+
+    ! velocityZonalObs init
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &               ! streamManager
+         forcingGroupHead, &                     ! forcingGroupHead
+         "ocn_aot_forcing", &            ! forcingGroupName
+         "velocityZonalObs", &                         ! forcingName
+         "aot_forcing", &                ! forcingStreamID
+         "timeVaryingForcing", &                 ! poolname
+         "velocityZonalObs", &                         ! fieldname
+         "linear", &                             ! interpolationType
+         config_time_varying_aot_forcing_reference_time, &                 ! forcingReferenceTimeStr
+         config_time_varying_aot_forcing_interval)!,                      ! forcingIntervalStr
+         !"next")                                ! forcingInitializationType
+
+    ! velocityMeridionalObs init
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         forcingGroupHead, &
+         "ocn_aot_forcing", &
+         "velocityMeridionalObs", &
+         "aot_forcing", &
+         "timeVaryingForcing", &
+         "velocityMeridionalObs", &
+         "linear", &
+         config_time_varying_aot_forcing_reference_time, &
+         config_time_varying_aot_forcing_interval)!, &
+         !"next")
+
+    call MPAS_forcing_init_field_data(&
+         forcingGroupHead, &                     ! forcingGroupHead
+         "ocn_aot_forcing", &            ! forcingGroupName
+         domain % streamManager, &               ! streamManager
+         config_do_restart, &                    ! restart
+         .false.)                                ! interpolateAtInit
+    ! aotPressure init
+  end subroutine init_aot_forcing!}}}
 
 
 
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  particle_forcing
+!  aot_forcing
 !
-!> \brief Adds forcing from LIGHT particle data.
+!> \brief Adds forcing from aot data.
 !> \author Collin Victor, LANL
 !> \date 9/22/2021
 !> \details
@@ -601,7 +647,7 @@ contains
 !-----------------------------------------------------------------------
 
 
-  subroutine particle_forcing(streamManager, domain, simulationClock)!{{{
+  subroutine aot_forcing(streamManager, domain, simulationClock)!{{{
 
     type (MPAS_streamManager_type), intent(inout) :: streamManager
 
@@ -628,30 +674,30 @@ contains
     ! use the forcing layer to get data
     call MPAS_forcing_get_forcing(&
          forcingGroupHead, &               ! forcingGroupHead
-         "ocn_particle_forcing", &      ! forcingGroupName
+         "ocn_aot_forcing", &      ! forcingGroupName
          streamManager, &                  ! streamManager
          dtSim)                            ! dt
 
     call MPAS_forcing_get_forcing_time(&
          forcingGroupHead, &               ! forcingGroupHead
-         "ocn_particle_forcing", &      ! forcingGroupName
+         "ocn_aot_forcing", &      ! forcingGroupName
          currentForcingTime)               ! forcingTime
     !call mpas_get_time(curr_time=currentForcingTime, dateTimeString=timeStamp, ierr=err)
     !call mpas_log_write('Forcing time ' // trim(timeStamp))
 
- !!! Uncomment and modify this section to add any modifications t the particle forcing after loading.
+ !!! Uncomment and modify this section to add any modifications t the aot forcing after loading.
    ! ! perform post forcing
    ! block => domain % blocklist
    ! do while (associated(block))
    !
    !    ! apply drag law to compute wind stress from wind speed
-   !    if (trim(config_time_varying_atmospheric_forcing_type) == "WINDPRES") then
-   !       call post_atmospheric_forcing(block)
+   !    if (trim(config_time_varying_aot_forcing_type) == "WINDPRES") then
+   !       call post_aot_forcing(block)
    !    endif
    !
    !    block => block % next
    ! end do
-  end subroutine particle_forcing!}}}
+  end subroutine aot_forcing!}}}
 
 
 end module ocn_time_varying_forcing
