@@ -704,7 +704,7 @@
 			description="Duration of the forcing cycle."
 			possible_values="'YYYY-MM-DD_HH:MM:SS"
 		/>
-		<nml_option name="config_time_varying_aot_forcing_interval" type="character" default_value="01:00:00" units="unitless"
+		<nml_option name="config_time_varying_aot_forcing_interval" type="character" default_value="0000-00-01_00:00:00" units="unitless"
 			description="Time between forcing inputs"
 			possible_values="'YYYY-MM-DD_HH:MM:SS"
 		/>
@@ -1844,18 +1844,16 @@
 			<var name="landIceFractionForcing"/>
 			<var name="landIceDraftForcing"/>
 		</stream>
-<!--
 		<stream name="aot_forcing"
 				type="input"
 				filename_template="aot_forcing.nc"
 				filename_interval="none"
 				input_interval="none"
 				packages="timeVaryingAOTForcingPKG"
-				runtime_format="single_file">
+				immutable="true">
 			<var name="velocityZonalObs"/>
 			<var name="velocityMeridionalObs"/>
 		</stream>
--->
 		<!-- Diagnostics streams for forward mode -->
 		<stream name="additional_output"
 				type="none"
