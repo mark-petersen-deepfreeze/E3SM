@@ -155,7 +155,7 @@ contains
 !      call mpas_log_write("Testing observational data loading: $r", MPAS_LOG_WARN, realArgs=(/ velocityZonalObs(1,1,1)))
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
-      !$acc    present(cellsOnEdge, tend, &
+      !$acc    present(cellsOnEdge, tend, latCell,&
       !$acc            velocityMeridional, velocityZonal, &
       !$acc            velocityMeridionalObs, velocityZonalObs) &
       !$acc    private(k, cell1, cell2)
@@ -167,16 +167,18 @@ contains
         cell1 = cellsOnEdge(1,iEdge)
         cell2 = cellsOnEdge(2,iEdge)
 !        k =  maxLevelEdgeTop(iEdge)
-        do k = 1, maxLevelEdgeTop(iEdge)
+        if (latCell(cell1)<=1.48353 .AND. latCell(cell2) <=1.48353) then
+          do k = 1, maxLevelEdgeTop(iEdge)
 !        if (k > 0) then
 !           tend(k,iEdge) = tend(k,iEdge) - aotCoeff* &
 !                           sqrt(KECell(k,cell1) + KECell(k,cell2))* &
 !                           normVelocity(k,iEdge)/layerThickEdge(k,iEdge)
 !        end if
-          tend(k,iEdge) = tend(k,iEdge) + aotCoeff*&
-            (  sin(angleEdge(iEdge)) * (0.5*(velocityMeridionalObs(k,cell1) - velocityMeridional(k,cell1) + velocityMeridionalObs(k,cell2) - velocityMeridional(k,cell2))) + &
-               cos(angleEdge(iEdge)) * (0.5*(velocityZonalObs(k,cell1) - velocityZonal(k,cell1) + velocityZonalObs(k,cell2) - velocityZonal(k,cell2)))     )
-        enddo
+            tend(k,iEdge) = tend(k,iEdge) + aotCoeff*&
+              (  sin(angleEdge(iEdge)) * (0.5*(velocityMeridionalObs(k,cell1) - velocityMeridional(k,cell1) + velocityMeridionalObs(k,cell2) - velocityMeridional(k,cell2))) + &
+                 cos(angleEdge(iEdge)) * (0.5*(velocityZonalObs(k,cell1) - velocityZonal(k,cell1) + velocityZonalObs(k,cell2) - velocityZonal(k,cell2)))     )
+          enddo
+        end if
       enddo
 #ifndef MPAS_OPENACC
       !$omp end do
