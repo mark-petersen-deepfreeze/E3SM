@@ -139,6 +139,7 @@ module ocn_time_integration_split
          tendPool,          &! structure holding tendencies
          tracersTendPool,   &! structure holding tracer tendencies
          forcingPool,       &! structure holding forcing variables
+         timeVaryingForcingPool,       &! structure holding forcing variables
          scratchPool,       &! structure holding temporary variables
          swForcingPool       ! structure holding short-wave forcing vars
 
@@ -289,6 +290,8 @@ module ocn_time_integration_split
                                                  statePool)
       call mpas_pool_get_subpool(block%structs, 'forcing', &
                                                  forcingPool)
+      call mpas_pool_get_subpool(block%structs, 'timeVaryingForcing', &
+                                                 timeVaryingForcingPool)
       call mpas_pool_get_subpool(block%structs, 'shortwave', &
                                                  swForcingPool)
       call mpas_pool_get_subpool(block%structs, 'tend', &
@@ -541,7 +544,7 @@ module ocn_time_integration_split
                  vertAleTransportTop, err)
          endif
 
-         call ocn_tend_vel(tendPool, statePool, forcingPool, &
+         call ocn_tend_vel(tendPool, statePool, forcingPool, timeVaryingForcingPool, &
                            stage1_tend_time, dt)
 
          call mpas_timer_stop('se bcl vel tend')

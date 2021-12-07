@@ -773,7 +773,7 @@ module ocn_time_integration_rk4
       integer, intent(out) :: err
 
       type (mpas_pool_type), pointer :: meshPool, verticalMeshPool
-      type (mpas_pool_type), pointer :: statePool, forcingPool
+      type (mpas_pool_type), pointer :: statePool, forcingPool, timeVaryingForcingPool
       type (mpas_pool_type), pointer :: scratchPool, tendPool, provisStatePool
       type (mpas_pool_type), pointer :: tracersPool
 
@@ -791,6 +791,7 @@ module ocn_time_integration_rk4
       call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
       call mpas_pool_get_subpool(block % structs, 'state', statePool)
       call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
+      call mpas_pool_get_subpool(block % structs, 'timeVaryingForcing', timeVaryingForcingPool)
       call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
       call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
       call mpas_pool_get_subpool(block % structs, 'provis_state', provisStatePool)
@@ -817,7 +818,7 @@ module ocn_time_integration_rk4
             vertAleTransportTop, err)
       endif
 
-      call ocn_tend_vel(tendPool, provisStatePool, forcingPool, 1, dt)
+      call ocn_tend_vel(tendPool, provisStatePool, forcingPool, timeVaryingForcingPool, 1, dt)
 
    end subroutine ocn_time_integrator_rk4_compute_vel_tends!}}}
 
@@ -945,7 +946,7 @@ module ocn_time_integration_rk4
       integer, intent(out) :: err
 
       type (mpas_pool_type), pointer :: meshPool, verticalMeshPool
-      type (mpas_pool_type), pointer :: statePool, forcingPool
+      type (mpas_pool_type), pointer :: statePool, forcingPool, timeVaryingForcingPool
       type (mpas_pool_type), pointer :: scratchPool, tendPool, provisStatePool
       type (mpas_pool_type), pointer :: swForcingPool, tracersPool
 
@@ -963,6 +964,7 @@ module ocn_time_integration_rk4
       call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
       call mpas_pool_get_subpool(block % structs, 'state', statePool)
       call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
+      call mpas_pool_get_subpool(block % structs, 'timeVaryingForcing', timeVaryingForcingPool)
       call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
       call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
       call mpas_pool_get_subpool(block % structs, 'provis_state', provisStatePool)
@@ -990,7 +992,7 @@ module ocn_time_integration_rk4
             vertAleTransportTop, err)
       endif
 
-      call ocn_tend_vel(tendPool, provisStatePool, forcingPool, 1, dt)
+      call ocn_tend_vel(tendPool, provisStatePool, forcingPool, timeVaryingForcingPool, 1, dt)
 
       if (associated(highFreqThicknessProvis)) then
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, scratchPool, &

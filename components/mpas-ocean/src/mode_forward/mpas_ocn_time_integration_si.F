@@ -131,6 +131,7 @@ module ocn_time_integration_si
       type (mpas_pool_type), pointer :: tendPool
       type (mpas_pool_type), pointer :: tracersTendPool
       type (mpas_pool_type), pointer :: forcingPool
+      type (mpas_pool_type), pointer :: timeVaryingForcingPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: swForcingPool
 
@@ -468,6 +469,7 @@ module ocn_time_integration_si
            call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
            call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
            call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
+           call mpas_pool_get_subpool(block % structs, 'timeVaryingForcing', timeVaryingForcingPool)
 
            call mpas_pool_get_array(statePool, 'layerThickness', layerThicknessCur, 1)
            call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityCur, stage1_tend_time)
@@ -475,7 +477,7 @@ module ocn_time_integration_si
 
            call mpas_pool_get_array(statePool, 'highFreqThickness', highFreqThicknessNew, 2)
 
-           call ocn_tend_vel(tendPool, statePool, forcingPool, stage1_tend_time, dt)
+           call ocn_tend_vel(tendPool, statePool, forcingPool, timeVaryingForcingPool, stage1_tend_time, dt)
 
            block => block % next
          end do

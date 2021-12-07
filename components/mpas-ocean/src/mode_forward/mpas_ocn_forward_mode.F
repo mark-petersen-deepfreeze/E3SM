@@ -703,7 +703,8 @@ module ocn_forward_mode
                 config_use_ecosysTracers .or. &
                 (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) .or. &
                 config_use_time_varying_atmospheric_forcing .or. &
-                config_use_time_varying_land_ice_forcing) then
+                config_use_time_varying_land_ice_forcing .or. &
+                config_use_time_varying_aot_forcing) then
 
                 call ocn_time_varying_forcing_write_restart_times(domain)
             end if
