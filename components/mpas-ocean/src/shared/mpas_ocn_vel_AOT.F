@@ -176,7 +176,7 @@ contains
 !      write(*,*) velocityMeridional(1,1:10)
 !      write(*,*) "mu"
 !      write(*,*) aotCoeff
-      write(*,*) aotForcingMask(1:10)
+!      write(*,*) aotForcingMask(1:10)
 
 !initialize aotLayer for non-masked cells
       do iCell = 1, nCells
