@@ -1858,6 +1858,7 @@
 			<var name="velocityZonalObs"/>
 			<var name="velocityMeridionalObs"/>
 		</stream>
+<!--
 		<stream name="aot_mask"
 				type="input"
 				filename_template="aot_mask.nc"
@@ -1867,6 +1868,7 @@
 				immutable="true">
 			<var name="aotForcingMask"/>
 		</stream>
+-->
 		<!-- Diagnostics streams for forward mode -->
 		<stream name="additional_output"
 				type="none"
