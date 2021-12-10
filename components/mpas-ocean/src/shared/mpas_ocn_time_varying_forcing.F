@@ -621,6 +621,22 @@ contains
          config_time_varying_aot_forcing_reference_time, &
          config_time_varying_aot_forcing_interval)!, &
          !"next")
+    !write (*,*) "Initialized AOT forcing."
+
+!    ! aotForcingMask init
+!    call MPAS_forcing_init_field(&
+!         domain % streamManager, &
+!         forcingGroupHead, &
+!         "ocn_aot_forcing", &
+!         "aotForcingMask", &
+!         "aot_forcing", &
+!         "timeVaryingForcing", &
+!         "aotForcingMask", &
+!         "linear", &
+!         config_time_varying_aot_forcing_reference_time, &
+!         config_time_varying_aot_forcing_interval)
+
+
 
     call MPAS_forcing_init_field_data(&
          forcingGroupHead, &                     ! forcingGroupHead
@@ -629,6 +645,8 @@ contains
          config_do_restart, &                    ! restart
          .false.)                                ! interpolateAtInit
     ! aotPressure init
+
+    !write (*,*) "Finished initializing AOT forcing."
   end subroutine init_aot_forcing!}}}
 
 
@@ -682,6 +700,8 @@ contains
          forcingGroupHead, &               ! forcingGroupHead
          "ocn_aot_forcing", &      ! forcingGroupName
          currentForcingTime)               ! forcingTime
+    
+!    write (*,*) "Updated AOT forcing."
     !call mpas_get_time(curr_time=currentForcingTime, dateTimeString=timeStamp, ierr=err)
     !call mpas_log_write('Forcing time ' // trim(timeStamp))
 

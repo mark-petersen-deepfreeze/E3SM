@@ -964,7 +964,7 @@ module ocn_time_integration_rk4
       call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
       call mpas_pool_get_subpool(block % structs, 'state', statePool)
       call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
-      call mpas_pool_get_subpool(block % structs, 'timeVaryingForcing', timeVaryingForcingPool)
+      call mpas_pool_get_subpool(block % structs, 'time_varying_forcing', timeVaryingForcingPool)
       call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
       call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
       call mpas_pool_get_subpool(block % structs, 'provis_state', provisStatePool)

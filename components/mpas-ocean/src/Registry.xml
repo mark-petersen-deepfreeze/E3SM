@@ -1854,6 +1854,15 @@
 			<var name="velocityZonalObs"/>
 			<var name="velocityMeridionalObs"/>
 		</stream>
+		<stream name="aot_mask"
+				type="input"
+				filename_template="aot_mask.nc"
+				filename_interval="none"
+				input_interval="none"
+				packages="timeVaryingAOTForcingPKG"
+				immutable="true">
+			<var name="aotForcingMask"/>
+		</stream>
 		<!-- Diagnostics streams for forward mode -->
 		<stream name="additional_output"
 				type="none"
@@ -3577,6 +3586,11 @@
 			 description="component of horizontal velocity in the northward direction"
 			 packages="timeVaryingAOTForcingPKG"
 		/>
+		<var name="aotForcingMask" type="integer" dimensions="nCells" units="unitless"
+			description="Mask indicating where observational data for AOT is present (1) or absent (0)"
+			packages="timeVaryingAOTForcingPKG"
+		/>
+
 	</var_struct>
 	<var_struct name="scratch" time_levs="1">
 
