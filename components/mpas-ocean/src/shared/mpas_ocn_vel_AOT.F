@@ -76,7 +76,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_aot_tend(timeVaryingForcingPool, tend, err)
+   subroutine ocn_vel_aot_tend(timeVaryingForcingPool,forcingPool, tend, err)
 !normVelocity, KECell, layerThickEdge, tend, err) !{{{
 
       !-----------------------------------------------------------------
@@ -84,6 +84,7 @@ contains
       !-----------------------------------------------------------------
 !      type (domain_type) intent(inout) :: domain
       type (mpas_pool_type), intent(in) :: timeVaryingForcingPool
+      type (mpas_pool_type), intent(in) :: forcingPool
 !!      real (kind=RKIND), dimension(:,:), intent(in) :: &
 !!         normVelocity,  &!< [in] normal velocity
 !!         KECell,        &!< [in] kinetic energy at cell
@@ -113,12 +114,24 @@ contains
       integer :: &
          iEdge,      &! loop index for edge loop
          k,          &! vertical index of lowest active layer at edge
+         j,          &! 
+         iSmooth,    &
+         iCell,      &
+         coc,        &
+         nCells,     &
          cell1, cell2 ! neighbor cell addresses across edge
          
+      integer, dimension(:), allocatable :: aotCounter, aotLayer ! tracks cell used for aot smoothing term
+!      real (kind=RKIND), dimension(:,:), allocatable :: velocityZonalAOTNew, velocityMeridionalAOTNew
       real (kind=RKIND), dimension(:,:), pointer :: &
          velocityMeridionalObs, &!< [in] meridional velocity at cell centers
          velocityZonalObs        !< [in] zonal velocity at cell centers 
-
+!         velocityMeridionalAOT, &!< [in] interpolated meridional velocity for AOT
+!         velocityZonalAOT        !< [in] interpolated zonal velocity for AOT 
+      integer, dimension(:), pointer :: aotForcingMask
+      real (kind=RKIND), dimension(:,:), allocatable :: &
+         velocityMeridionalAOT, &!< [in] interpolated meridional velocity for AOT
+         velocityZonalAOT        !< [in] interpolated zonal velocity for AOT 
       ! End preamble
       !-----------------------------------------------------------------
       ! Begin code
@@ -140,6 +153,19 @@ contains
       call mpas_pool_get_array(timeVaryingForcingPool, 'velocityZonalObs', velocityZonalObs)
       call mpas_pool_get_array(timeVaryingForcingPool, 'velocityMeridionalObs', velocityMeridionalObs)
       
+      call mpas_pool_get_array(forcingPool, 'aotForcingMask', aotForcingMask)
+
+
+!      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      nCells = nCellsAll
+!      allocate(velocityZonalAOTNew(nVertLevels,nCells))
+!      allocate(velocityMeridionalAOTNew(nVertLevels,nCells))
+      allocate(aotLayer(nCells))
+      allocate(aotCounter(nCells))
+      allocate(velocityMeridionalAOT(nVertLevels,nCells))
+      allocate(velocityZonalAOT(nVertLevels,nCells))
+
+
 !      write(*,*) "velocicyZonalObs"
 !      write(*,*) velocityZonalObs(1,1:10)
 !      write(*,*) "velocicyMeridionalObs"
@@ -150,6 +176,45 @@ contains
 !      write(*,*) velocityMeridional(1,1:10)
 !      write(*,*) "mu"
 !      write(*,*) aotCoeff
+      write(*,*) aotForcingMask(1:10)
+
+!initialize aotLayer for non-masked cells
+      do iCell = 1, nCells
+        if(aotForcingMask(iCell) == 1) then
+           aotLayer(iCell) = 1 !non-masked cells are in the first layer, which increments by 1 going outward to neighbors
+           aotCounter(iCell) = 1 !number of items used for averaging the value of nearby cells
+           do k = 1, maxLevelCell(iCell)
+             velocityMeridionalAOT(k,iCell) = velocityMeridionalObs(k,iCell) - velocityMeridional(k,iCell)
+             velocityZonalAOT(k,iCell) = velocityZonalObs(k,iCell) - velocityZonal(k,iCell)
+           enddo 
+        endif
+      enddo
+
+
+      do iSmooth = 1, config_aot_neighbor_iterations
+        do iCell = 1, nCells
+          if (aotLayer(iCell) == iSmooth) then
+            do j = 1, nEdgesOnCell(iCell)
+              coc = cellsOnCell(j,iCell)
+              if (coc < nCells+1) then
+                if (aotLayer(coc) == 0 .OR. aotLayer(coc) == iSmooth + 1) then
+                  aotLayer(coc) = iSmooth + 1
+                  !aotCounter(coc) = aotCounter(coc) + 1
+                  do k = 1, maxLevelCell(iCell)
+                    velocityMeridionalAOT(k,coc) = (velocityMeridionalAOT(k,coc)*aotCounter(coc) + velocityMeridionalAOT(k,iCell))/(aotCounter(coc)+1)
+                    velocityZonalAOT(k,coc) = (velocityZonalAOT(k,coc)*aotCounter(coc) + velocityZonalAOT(k,iCell))/(aotCounter(coc)+1)
+                  enddo
+                  aotCounter(coc) = aotCounter(coc) + 1
+                endif
+              endif
+            enddo
+          endif
+        enddo
+      enddo
+
+
+
+
 
 
 !      call mpas_log_write("Testing observational data loading: $r", MPAS_LOG_WARN, realArgs=(/ velocityZonalObs(1,1,1)))
@@ -185,6 +250,7 @@ contains
       !$omp end parallel
 #endif
 
+      deallocate(aotCounter, aotLayer, velocityZonalAOT, velocityMeridionalAOT)
       call mpas_timer_stop('AOT u-v term')
 
    !--------------------------------------------------------------------
