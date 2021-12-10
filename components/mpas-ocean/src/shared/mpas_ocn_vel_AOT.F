@@ -221,8 +221,7 @@ contains
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(cellsOnEdge, tend, latCell,&
-      !$acc            velocityMeridional, velocityZonal, &
-      !$acc            velocityMeridionalObs, velocityZonalObs) &
+      !$acc            velocityMeridionalAOT, velocityZonalAOT) &
       !$acc    private(k, cell1, cell2)
 #else
       !$omp parallel
@@ -240,8 +239,8 @@ contains
 !                           normVelocity(k,iEdge)/layerThickEdge(k,iEdge)
 !        end if
             tend(k,iEdge) = tend(k,iEdge) + aotCoeff*&
-              (  sin(angleEdge(iEdge)) * (0.5*(velocityMeridionalObs(k,cell1) - velocityMeridional(k,cell1) + velocityMeridionalObs(k,cell2) - velocityMeridional(k,cell2))) + &
-                 cos(angleEdge(iEdge)) * (0.5*(velocityZonalObs(k,cell1) - velocityZonal(k,cell1) + velocityZonalObs(k,cell2) - velocityZonal(k,cell2)))     )
+              (  sin(angleEdge(iEdge)) * (0.5*(velocityMeridionalAOT(k,cell1) + velocityMeridionalAOT(k,cell2))) + &
+                 cos(angleEdge(iEdge)) * (0.5*(velocityZonalAOT(k,cell1) + velocityZonalAOT(k,cell2)))     )
           enddo
         end if
       enddo
