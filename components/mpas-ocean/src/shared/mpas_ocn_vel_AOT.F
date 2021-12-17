@@ -252,31 +252,9 @@ contains
         enddo !iSmooth
       endif
 
-      do iSmooth = 1, config_aot_neighbor_iterations
-        do iCell = 1, nCells
-          if (aotLayer(iCell) == iSmooth) then
-            do j = 1, nEdgesOnCell(iCell)
-              coc = cellsOnCell(j,iCell)
-              if (coc < nCells+1) then
-                if (aotLayer(coc) == 0 .OR. aotLayer(coc) == iSmooth + 1) then
-                  aotLayer(coc) = iSmooth + 1
-                  !aotCounter(coc) = aotCounter(coc) + 1
-                  do k = 1, maxLevelCell(iCell)
-                    velocityMeridionalAOT(k,coc) = (velocityMeridionalAOT(k,coc)*aotCounter(coc) + velocityMeridionalAOT(k,iCell))/(aotCounter(coc)+1)
-                    velocityZonalAOT(k,coc) = (velocityZonalAOT(k,coc)*aotCounter(coc) + velocityZonalAOT(k,iCell))/(aotCounter(coc)+1)
-                  enddo !k
-                  aotCounter(coc) = aotCounter(coc) + 1
-                endif !aotLayer(coc)
-              endif !coc
-            enddo !j
-          endif !aotLayer(iCell)
-        enddo !iCell
-      enddo !iSmooth
-
-
       
 !      do iSmooth = 1, config_aot_smoothing_iterations
-!
+!        
 !
 !      enddo !iSmooth
 
