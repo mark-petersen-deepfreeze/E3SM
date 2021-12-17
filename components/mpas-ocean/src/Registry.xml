@@ -1003,6 +1003,14 @@
 					description="Number of passes to construct AOT term from downsampled data."
 					possible_values="any non-negative integer, typically between 0 and 5."
 		/>
+		<nml_option name="config_aot_smoothing_iterations" type="integer" default_value="0" units="unitless"
+					description="Number of passes to smooth AOT term by averaging neighbors."
+					possible_values="any non-negative integer, typically between 0 and 5."
+		/>
+		<nml_option name="config_aot_interp_weight" type="character" default_value="constant" units="unitless"
+					description="If 'constant', weight all neighbors equally in spatial interpolation, if 'geometric', weight by edge length."
+					possible_values="'constant', 'geometric'"
+		/>
 		<nml_option name="config_use_topographic_wave_drag" type="logical" default_value=".false." units="unitless"
 					description="If true, topographic wave drag is used on the momentum equation."
 					possible_values=".true. or .false."
@@ -1852,7 +1860,7 @@
 				type="input"
 				filename_template="aot_forcing.nc"
 				filename_interval="none"
-				input_interval="none"
+				input_interval="initial_only"
 				packages="timeVaryingAOTForcingPKG"
 				immutable="true">
 			<var name="velocityZonalObs"/>
