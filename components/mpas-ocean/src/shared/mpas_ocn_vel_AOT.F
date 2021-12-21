@@ -182,10 +182,10 @@ contains
            aotCounter(iCell) = 0
            aotLayer(iCell) = 1 !non-masked cells are in the first layer, which increments by 1 going outward to neighbors
            do k = 1, maxLevelCell(iCell)
-!             velocityMeridionalAOT(k,iCell) = velocityMeridionalObs(k,iCell) - velocityMeridional(k,iCell)
-!             velocityZonalAOT(k,iCell) = velocityZonalObs(k,iCell) - velocityZonal(k,iCell)
-              velocityZonalAOT(k,iCell) = 1
-              velocityMeridionalAOT(k,iCell) = iCell
+             velocityMeridionalAOT(k,iCell) = velocityMeridionalObs(k,iCell) - velocityMeridional(k,iCell)
+             velocityZonalAOT(k,iCell) = velocityZonalObs(k,iCell) - velocityZonal(k,iCell)
+!              velocityZonalAOT(k,iCell) = 1
+!              velocityMeridionalAOT(k,iCell) = iCell
            enddo !k
         else
           aotLayer(iCell) = 0
