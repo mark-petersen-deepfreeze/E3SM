@@ -121,18 +121,18 @@ contains
          eoc,        &
          nCells,     &
          cell1, cell2 ! neighbor cell addresses across edge
-      real (kind=RKIND) :: aotCounter, aotCounterOffset
-      integer, dimension(:), allocatable :: aotLayer ! tracks cell used for aot smoothing term
+      real (kind=RKIND) :: aotCounterOffset
+      integer, dimension(:), allocatable :: aotLayer, aotCounter ! tracks cell used for aot smoothing term
 !      real (kind=RKIND), dimension(:,:), allocatable :: velocityZonalAOTNew, velocityMeridionalAOTNew
       real (kind=RKIND), dimension(:,:), pointer :: &
          velocityMeridionalObs, &!< [in] meridional velocity at cell centers
-         velocityZonalObs        !< [in] zonal velocity at cell centers 
-!         velocityMeridionalAOT, &!< [in] interpolated meridional velocity for AOT
-!         velocityZonalAOT        !< [in] interpolated zonal velocity for AOT 
+         velocityZonalObs,       &!< [in] zonal velocity at cell centers 
+         velocityMeridionalAOT, &!< [in] interpolated meridional velocity for AOT
+         velocityZonalAOT        !< [in] interpolated zonal velocity for AOT 
       integer, dimension(:), pointer :: aotForcingMask
       real (kind=RKIND), dimension(:,:), allocatable :: &
-         velocityMeridionalAOT, &!< [in] interpolated meridional velocity for AOT
-         velocityZonalAOT,      &!< [in] interpolated zonal velocity for AOT 
+!         velocityMeridionalAOT, &!< [in] interpolated meridional velocity for AOT
+!         velocityZonalAOT,      &!< [in] interpolated zonal velocity for AOT 
          velocityMeridionalAOTNew, &!< [in] interpolated meridional velocity for AOT
          velocityZonalAOTNew        !< [in] interpolated zonal velocity for AOT 
       ! End preamble
@@ -156,6 +156,9 @@ contains
       call mpas_pool_get_array(timeVaryingForcingPool, 'velocityZonalObs', velocityZonalObs)
       call mpas_pool_get_array(timeVaryingForcingPool, 'velocityMeridionalObs', velocityMeridionalObs)
       
+      call mpas_pool_get_array(forcingPool, 'velocityZonalAOT', velocityZonalAOT)
+      call mpas_pool_get_array(forcingPool, 'velocityMeridionalAOT', velocityMeridionalAOT)
+      
       call mpas_pool_get_array(forcingPool, 'aotForcingMask', aotForcingMask)
 
 
@@ -164,32 +167,25 @@ contains
 !      allocate(velocityZonalAOTNew(nVertLevels,nCells))
 !      allocate(velocityMeridionalAOTNew(nVertLevels,nCells))
       allocate(aotLayer(nCells))
-!      allocate(aotCounter(nCells))
-      allocate(velocityMeridionalAOT(nVertLevels,nCells))
-      allocate(velocityZonalAOT(nVertLevels,nCells))
+      allocate(aotCounter(nCells))
+!      allocate(velocityMeridionalAOT(nVertLevels,nCells))
+!      allocate(velocityZonalAOT(nVertLevels,nCells))
       allocate(velocityMeridionalAOTNew(nVertLevels,nCells))
       allocate(velocityZonalAOTNew(nVertLevels,nCells))
 
 
-!      write(*,*) "velocicyZonalObs"
-!      write(*,*) velocityZonalObs(1,1:10)
-!      write(*,*) "velocicyMeridionalObs"
-!      write(*,*) velocityMeridionalObs(1,1:10)
-!      write(*,*) "velocicyZonal"
-!      write(*,*) velocityZonal(1,1:10)
-!      write(*,*) "velocicyMeridional"
-!      write(*,*) velocityMeridional(1,1:10)
-!      write(*,*) "mu"
-!      write(*,*) aotCoeff
-!      write(*,*) aotForcingMask(1:10)
 
 !initialize aotLayer for non-masked cells
       do iCell = 1, nCells
+           aotCounter(iCell) = 0
         if(aotForcingMask(iCell) == 1) then
+           aotCounter(iCell) = 0
            aotLayer(iCell) = 1 !non-masked cells are in the first layer, which increments by 1 going outward to neighbors
            do k = 1, maxLevelCell(iCell)
-             velocityMeridionalAOT(k,iCell) = velocityMeridionalObs(k,iCell) - velocityMeridional(k,iCell)
-             velocityZonalAOT(k,iCell) = velocityZonalObs(k,iCell) - velocityZonal(k,iCell)
+!             velocityMeridionalAOT(k,iCell) = velocityMeridionalObs(k,iCell) - velocityMeridional(k,iCell)
+!             velocityZonalAOT(k,iCell) = velocityZonalObs(k,iCell) - velocityZonal(k,iCell)
+              velocityZonalAOT(k,iCell) = 1
+              velocityMeridionalAOT(k,iCell) = iCell
            enddo !k
         else
           aotLayer(iCell) = 0
@@ -200,6 +196,8 @@ contains
         endif !aotForcingMask(iCell)
       enddo !iCell
 
+      
+
       ! Nearest Neighbor initializeation
       if(config_aot_interp_weight == "constant") then
         aotCounterOffset = 1
@@ -208,17 +206,18 @@ contains
             if (aotLayer(iCell) == iSmooth) then
               do j = 1, nEdgesOnCell(iCell)
                 coc = cellsOnCell(j,iCell)
+                
                 if (coc < nCells+1) then
                   if (aotLayer(coc) == 0 .OR. aotLayer(coc) == iSmooth + 1) then
                     aotLayer(coc) = iSmooth + 1
                     !aotCounter = aotCounter + 1
-                    do k = 1, maxLevelCell(iCell)
-                      velocityMeridionalAOT(k,coc) = (velocityMeridionalAOT(k,coc)*aotCounter &
-                                                   + velocityMeridionalAOT(k,iCell))/(aotCounter+aotCounterOffset)
-                      velocityZonalAOT(k,coc) = (velocityZonalAOT(k,coc)*aotCounter &
-                                              + velocityZonalAOT(k,iCell))/(aotCounter+aotCounterOffset)
+                    do k = 1, maxLevelCell(iCell) 
+                      velocityMeridionalAOT(k,coc) = (velocityMeridionalAOT(k,coc)*aotCounter(coc) &
+                                                   + velocityMeridionalAOT(k,iCell))/(aotCounter(coc)+aotCounterOffset)
+                      velocityZonalAOT(k,coc) = (velocityZonalAOT(k,coc)*aotCounter(coc) &
+                                              + velocityZonalAOT(k,iCell))/(aotCounter(coc)+aotCounterOffset)
                     enddo !k
-                    aotCounter = aotCounter + aotCounterOffset
+                    aotCounter(coc) = aotCounter(coc) + aotCounterOffset
                   endif !aotLayer(coc)
                 endif !coc
               enddo !j
@@ -238,12 +237,12 @@ contains
                     aotCounterOffset = dcEdge(eoc)
                     !aotCounter = aotCounter + 1
                     do k = 1, maxLevelCell(iCell)
-                      velocityMeridionalAOT(k,coc) = (velocityMeridionalAOT(k,coc)*aotCounter &
-                                                   + velocityMeridionalAOT(k,iCell))/(aotCounter+aotCounterOffset)
-                      velocityZonalAOT(k,coc) = (velocityZonalAOT(k,coc)*aotCounter &
-                                              + velocityZonalAOT(k,iCell))/(aotCounter+aotCounterOffset)
+                      velocityMeridionalAOT(k,coc) = (velocityMeridionalAOT(k,coc)*aotCounter(coc) &
+                                                   + velocityMeridionalAOT(k,iCell))/(aotCounter(coc)+aotCounterOffset)
+                      velocityZonalAOT(k,coc) = (velocityZonalAOT(k,coc)*aotCounter(coc) &
+                                              + velocityZonalAOT(k,iCell))/(aotCounter(coc)+aotCounterOffset)
                     enddo !k
-                    aotCounter = aotCounter + aotCounterOffset
+                    aotCounter(coc) = aotCounter(coc) + aotCounterOffset
                   endif !aotLayer(coc)
                 endif !coc
               enddo !j
@@ -252,26 +251,33 @@ contains
         enddo !iSmooth
       endif
 
+
       ! Once data has been initialized apply iterated averaging to smooth it
       if(config_aot_interp_weight == "constant") then
         aotCounterOffset = 1
         do iSmooth = 1, config_aot_smoothing_iterations
           do iCell = 1, nCells
             if (aotForcingMask(iCell) == 0) then
-              velocityZonalAOTNew(:,iCell) = velocityZonalAOT(:,iCell)
-              velocityMeridionalAOTNew(:,iCell) = velocityMeridionalAOT(:,iCell)
-              aotCounter = 1
+              do k = 1, maxLevelCell(iCell)
+                velocityZonalAOTNew(k,iCell) = velocityZonalAOT(k,iCell)
+                velocityMeridionalAOTNew(k,iCell) = velocityMeridionalAOT(k,iCell)
+              enddo !k
+              aotCounter(iCell) = 1
               do j = 1, nEdgesOnCell(iCell)
                 coc = cellsOnCell(j,iCell)
                 if (coc < nCells+1) then
-                  velocityMeridionalAOTNew(:,iCell) = velocityMeridionalAOTNew(:,iCell) + velocityMeridionalAOT(:,coc)
-                  velocityZonalAOTNew(:,iCell) = velocityZonalAOTNew(:,iCell) + velocityZonalAOT(:,coc)
-                  aotCounter = aotCounter + aotCounterOffset
+                    do k = 1, maxLevelCell(iCell)
+                      velocityMeridionalAOTNew(k,iCell) = velocityMeridionalAOTNew(k,iCell) + velocityMeridionalAOT(k,coc)
+                      velocityZonalAOTNew(k,iCell) = velocityZonalAOTNew(k,iCell) + velocityZonalAOT(k,coc)
+                    enddo !k
+                  aotCounter(iCell) = aotCounter(iCell) + aotCounterOffset
                 endif !coc
               enddo !j
             endif !aotLayer(iCell)
-            velocityMeridionalAOTNew(:,iCell) = velocityMeridionalAOTNew(:,iCell)/aotCounter
-            velocityZonalAOTNew(:,iCell) = velocityZonalAOTNew(:,iCell)/aotCounter
+            do k = 1, maxLevelCell(iCell)
+              velocityMeridionalAOTNew(k,iCell) = velocityMeridionalAOTNew(k,iCell)/aotCounter(iCell)
+              velocityZonalAOTNew(k,iCell) = velocityZonalAOTNew(k,iCell)/aotCounter(iCell)
+            enddo !k
           enddo !iCell
           velocityMeridionalAOT = velocityMeridionalAOTNew
           velocityZonalAOT = velocityZonalAOTNew
@@ -280,27 +286,33 @@ contains
         do iSmooth = 1, config_aot_smoothing_iterations
           do iCell = 1, nCells
             if (aotForcingMask(iCell) == 0) then
-              velocityZonalAOTNew(:,iCell) = velocityZonalAOT(:,iCell)
-              velocityMeridionalAOTNew(:,iCell) = velocityMeridionalAOT(:,iCell)
-              aotCounter = 1
+              do k = 1, maxLevelCell(iCell)
+                velocityZonalAOTNew(k,iCell) = velocityZonalAOT(k,iCell)
+                velocityMeridionalAOTNew(k,iCell) = velocityMeridionalAOT(k,iCell)
+              enddo !k
+              aotCounter(iCell) = 1
               do j = 1, nEdgesOnCell(iCell)
                 coc = cellsOnCell(j,iCell)
+                eoc = edgesOnCell(j,iCell)
                 if (coc < nCells+1) then
-                  velocityMeridionalAOTNew(:,iCell) = velocityMeridionalAOTNew(:,iCell) + velocityMeridionalAOT(:,coc)
-                  velocityZonalAOTNew(:,iCell) = velocityZonalAOTNew(:,iCell) + velocityZonalAOT(:,coc)
+                    do k = 1, maxLevelCell(iCell)
+                      velocityMeridionalAOTNew(k,iCell) = velocityMeridionalAOTNew(k,iCell) + velocityMeridionalAOT(k,coc)
+                      velocityZonalAOTNew(k,iCell) = velocityZonalAOTNew(k,iCell) + velocityZonalAOT(k,coc)
+                    enddo !k
                   aotCounterOffset = dcEdge(eoc)
-                  aotCounter = aotCounter + aotCounterOffset
+                  aotCounter(iCell) = aotCounter(iCell) + aotCounterOffset
                 endif !coc
               enddo !j
             endif !aotLayer(iCell)
-            velocityMeridionalAOTNew(:,iCell) = velocityMeridionalAOTNew(:,iCell)/aotCounter
-            velocityZonalAOTNew(:,iCell) = velocityZonalAOTNew(:,iCell)/aotCounter
+            do k = 1, maxLevelCell(iCell)
+              velocityMeridionalAOTNew(k,iCell) = velocityMeridionalAOTNew(k,iCell)/aotCounter(iCell)
+              velocityZonalAOTNew(k,iCell) = velocityZonalAOTNew(k,iCell)/aotCounter(iCell)
+            enddo !k
           enddo !iCell
           velocityMeridionalAOT = velocityMeridionalAOTNew
           velocityZonalAOT = velocityZonalAOTNew
         enddo !iSmooth
       endif
-
 
 
 
@@ -341,7 +353,7 @@ contains
       !$omp end parallel
 #endif
 
-      deallocate( aotLayer, velocityZonalAOT, velocityMeridionalAOT, velocityZonalAOTNew, velocityMeridionalAOTNew)
+      deallocate( aotLayer, aotCounter, velocityZonalAOTNew, velocityMeridionalAOTNew)
       call mpas_timer_stop('AOT u-v term')
 
    !--------------------------------------------------------------------

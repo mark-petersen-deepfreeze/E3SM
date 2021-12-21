@@ -3166,16 +3166,15 @@
 				constituent fields, depending on the forcing options selected.
 
 			 ********************************************************************* -->
-<!--   
-		<var name="velocityZonalObs" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+ 
+		<var name="velocityZonalAOT" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="component of horizontal velocity in the eastward direction"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="velocityMeridionalObs" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="velocityMeridionalAOT" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="component of horizontal velocity in the northward direction"
 			 packages="forwardMode;analysisMode"
 		/>
--->
 		<var name="aotForcingMask" type="integer" dimensions="nCells" units="unitless"
 			description="Mask indicating where observational data for AOT is present (1) or absent (0)"
 			packages="timeVaryingAOTForcingPKG"
