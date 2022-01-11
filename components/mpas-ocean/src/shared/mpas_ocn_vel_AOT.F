@@ -184,8 +184,8 @@ contains
            do k = 1, maxLevelCell(iCell)
            velocityMeridionalAOT(k,iCell) = velocityMeridionalObs(k,iCell) - velocityMeridional(k,iCell)
            velocityZonalAOT(k,iCell) = velocityZonalObs(k,iCell) - velocityZonal(k,iCell)
-           !   velocityZonalAOT(k,iCell) = 1
-           !   velocityMeridionalAOT(k,iCell) = 1
+              !velocityZonalAOT(k,iCell) = 1
+              !velocityMeridionalAOT(k,iCell) = iCell
            enddo !k
            do k = maxLevelCell(iCell) + 1, nVertLevels
              velocityMeridionalAOT(k,iCell) = 0
@@ -265,12 +265,12 @@ contains
         aotCounterOffset = 1
         do iSmooth = 1, config_aot_smoothing_iterations
           do iCell = 1, nCells
-            !if (aotForcingMask(iCell) == 0) then
+            if (aotForcingMask(iCell) == 0) then
               do k = 1, maxLevelCell(iCell)
                 velocityZonalAOTNew(k,iCell) = velocityZonalAOT(k,iCell)
                 velocityMeridionalAOTNew(k,iCell) = velocityMeridionalAOT(k,iCell)
               enddo !k
-              counter_layers = 0
+              counter_layers = 1
               do j = 1, nEdgesOnCell(iCell)
                 coc = cellsOnCell(j,iCell)
                 if (coc < nCells+1 ) then
@@ -281,11 +281,11 @@ contains
                     enddo !k
                 endif !coc
               enddo !j
-            !endif !aotLayer(iCell)
-            do k = 1, maxLevelCell(iCell)
-              velocityMeridionalAOTNew(k,iCell) = velocityMeridionalAOTNew(k,iCell)/counter_layers(k)
-              velocityZonalAOTNew(k,iCell) = velocityZonalAOTNew(k,iCell)/counter_layers(k)
-            enddo !k
+              do k = 1, maxLevelCell(iCell)
+                velocityMeridionalAOTNew(k,iCell) = velocityMeridionalAOTNew(k,iCell)/counter_layers(k)
+                velocityZonalAOTNew(k,iCell) = velocityZonalAOTNew(k,iCell)/counter_layers(k)
+              enddo !k
+            endif !aotLayer(iCell)
           enddo !iCell
           velocityMeridionalAOT = velocityMeridionalAOTNew
           velocityZonalAOT = velocityZonalAOTNew
@@ -314,11 +314,11 @@ contains
                   enddo !k
                 endif !coc
               enddo !j
+              do k = 1, maxLevelCell(iCell)
+                velocityMeridionalAOTNew(k,iCell) = velocityMeridionalAOTNew(k,iCell)/counter_layers(k)
+                velocityZonalAOTNew(k,iCell) = velocityZonalAOTNew(k,iCell)/counter_layers(k)
+              enddo !k
             endif !aotLayer(iCell)
-            do k = 1, maxLevelCell(iCell)
-              velocityMeridionalAOTNew(k,iCell) = velocityMeridionalAOTNew(k,iCell)/counter_layers(k)
-              velocityZonalAOTNew(k,iCell) = velocityZonalAOTNew(k,iCell)/counter_layers(k)
-            enddo !k
           enddo !iCell
           velocityMeridionalAOT = velocityMeridionalAOTNew
           velocityZonalAOT = velocityZonalAOTNew
