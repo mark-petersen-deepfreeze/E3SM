@@ -684,6 +684,10 @@
 			description="If true calculate input forcing fields."
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_disable_loading_aot_forcing" type="logical" default_value=".false." units="unitless"
+			description="If true don't attempt to load aot forcing, observational data is from diagnostics."
+			possible_values=".true. or .false."
+		/>
 		<nml_option name="config_time_varying_aot_forcing_type" type="character" default_value="INTERP" units="unitless"
 			description="aot forcing type."
 			possible_values="'INTERP' or 'CONSTANT'"
@@ -993,6 +997,10 @@
 		/>
 		<nml_option name="config_use_aot" type="logical" default_value=".false." units="unitless"
 					description="If true, AOT forcing is used on the momentum equation."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_aot_obs_generator" type="logical" default_value=".false." units="unitless"
+					description="If true, the  AOT forcing module is used only to generate observations."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_aot_coeff" type="real" default_value="1.0e-3" units="unitless"

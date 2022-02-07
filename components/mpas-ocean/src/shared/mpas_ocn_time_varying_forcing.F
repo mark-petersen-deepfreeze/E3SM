@@ -574,6 +574,12 @@ contains
   subroutine init_aot_forcing(domain)!{{{
 
     type (domain_type) :: domain
+    
+    type (block_type), pointer :: block
+    type (mpas_pool_type), pointer :: timeVaryingForcingPool
+    real (kind=RKIND), dimension(:,:), pointer :: &
+      velocityMeridionalObs, &
+      velocityZonalObs
  ! 
  !   select case (trim(config_time_varying_aot_forcing_type))
 
@@ -582,7 +588,18 @@ contains
  !     case default
  !   call mpas_log_write("aot forcing type unknown: "//trim(config_time_varying_aot_forcing_type), MPAS_LOG_CRIT)
  !   end select
-
+    if (config_disable_loading_aot_forcing) then
+ !     block => domain % blocklist
+ !       do while (associated(block))
+ !         call MPAS_pool_get_subpool(block % structs, 'timeVaryingForcingPool', timeVaryingForcingPool)
+ !         call mpas_pool_get_array(timeVaryingForcingPool, 'velocityMeridionalObs', velocityMeridionalObs)  
+ !         call mpas_pool_get_array(timeVaryingForcingPool, 'velocityZonalObs', velocityZonalObs)
+ !         velocityMeridionalObs = velocityMeridional
+ !         velocityZonalObs = velocityZonal
+ !         block => block % next
+ !       end do   
+      return
+    else
     ! create the aot forcing group
     call MPAS_forcing_init_group(&
          forcingGroupHead, &                     ! forcingGroupHead
@@ -645,7 +662,7 @@ contains
          config_do_restart, &                    ! restart
          .false.)                                ! interpolateAtInit
     ! aotPressure init
-
+    endif
     !write (*,*) "Finished initializing AOT forcing."
   end subroutine init_aot_forcing!}}}
 
@@ -684,7 +701,9 @@ contains
     real (kind=RKIND) :: dtSim
 
     integer :: err
-
+    
+    !don't try to update data from stream if disabled
+    if (config_disable_loading_aot_forcing) return
     ! convert config_dt to real
     call mpas_set_timeInterval(timeStepESMF, timeString=config_dt,ierr=err)
     call mpas_get_timeInterval(timeStepESMF, dt=dtSim)

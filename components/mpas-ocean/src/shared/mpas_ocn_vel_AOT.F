@@ -54,7 +54,8 @@ module ocn_vel_aot
    !--------------------------------------------------------------------
 
    logical :: &
-      aotOff  ! on/off switch for explicit bottom drag
+      aotOff,  & ! on/off switch for explicit bottom drag
+      obsGen    ! on/off switch for generating observations
 
    real (kind=RKIND) :: &
       aotCoeff          ! drag coefficient
@@ -143,7 +144,14 @@ contains
       !*** Otherwise start timer
 
       err = 0
-      if (aotOff) return
+      if (obsGen .OR. aotOff) then
+          
+        call mpas_pool_get_array(timeVaryingForcingPool, 'velocityZonalObs', velocityZonalObs)
+        call mpas_pool_get_array(timeVaryingForcingPool, 'velocityMeridionalObs', velocityMeridionalObs)
+          velocityZonalObs = velocityZonal
+          velocityMeridionalObs = velocityMeridional
+      return 
+      endif
       call mpas_timer_start('AOT u-v term')
       
       ! Explicit bottom drag term:
@@ -152,7 +160,7 @@ contains
       ! This term comes from the bottom boundary condition in the vertical
       ! momentum mixing, and is explicit if both |u| and u are chosen to be at
       ! time level n.
-
+           
       call mpas_pool_get_array(timeVaryingForcingPool, 'velocityZonalObs', velocityZonalObs)
       call mpas_pool_get_array(timeVaryingForcingPool, 'velocityMeridionalObs', velocityMeridionalObs)
       
@@ -398,7 +406,7 @@ contains
 
       aotOff  = .true.
       aotCoeff = 0.0_RKIND
-
+      obsGen = .false.
 
       !*** Reset values based on input model configuration
 
@@ -407,7 +415,9 @@ contains
          aotCoeff = config_aot_coeff
 !         write(*,*) "here"
       endif
-
+      if (config_aot_obs_generator) then
+         obsGen = .true.
+      endif
       if (config_disable_vel_aot) then
          aotOff = .true.
          aotCoeff = 0.0_RKIND
