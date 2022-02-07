@@ -144,7 +144,8 @@ contains
       !*** Otherwise start timer
 
       err = 0
-      if (obsGen .OR. aotOff) then
+      if (aotOff) return
+      if (obsGen) then
           
         call mpas_pool_get_array(timeVaryingForcingPool, 'velocityZonalObs', velocityZonalObs)
         call mpas_pool_get_array(timeVaryingForcingPool, 'velocityMeridionalObs', velocityMeridionalObs)
