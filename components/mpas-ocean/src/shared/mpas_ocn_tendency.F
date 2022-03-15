@@ -430,7 +430,7 @@ contains
 
 
       ! Add AOT forcing
-      call ocn_vel_aot_tend(timeVaryingForcingPool, forcingPool, tendVel, err)
+      call ocn_vel_aot_tend(timeVaryingForcingPool, normalVelocity, statePool, forcingPool, tendVel, err)
 
       ! vertical mixing treated implicitly in a later routine
       ! adjust total velocity tendency based on wetting/drying

@@ -31,7 +31,8 @@ module ocn_time_varying_forcing
   public :: &
        ocn_time_varying_forcing_init, &
        ocn_time_varying_forcing_get, &
-       ocn_time_varying_forcing_write_restart_times
+       ocn_time_varying_forcing_write_restart_times, &
+       ocn_time_varying_forcing_aot_obs_update
 
 contains
 
@@ -579,7 +580,8 @@ contains
     type (mpas_pool_type), pointer :: timeVaryingForcingPool
     real (kind=RKIND), dimension(:,:), pointer :: &
       velocityMeridionalObs, &
-      velocityZonalObs
+      velocityZonalObs, &
+      normalVelocityObs
  ! 
  !   select case (trim(config_time_varying_aot_forcing_type))
 
@@ -588,7 +590,7 @@ contains
  !     case default
  !   call mpas_log_write("aot forcing type unknown: "//trim(config_time_varying_aot_forcing_type), MPAS_LOG_CRIT)
  !   end select
-    if (config_disable_loading_aot_forcing) then
+    if (config_aot_obs_gen) return
  !     block => domain % blocklist
  !       do while (associated(block))
  !         call MPAS_pool_get_subpool(block % structs, 'timeVaryingForcingPool', timeVaryingForcingPool)
@@ -598,8 +600,9 @@ contains
  !         velocityZonalObs = velocityZonal
  !         block => block % next
  !       end do   
-      return
-    else
+
+    write (*,*) "Started initializing AOT forcing."
+    
     ! create the aot forcing group
     call MPAS_forcing_init_group(&
          forcingGroupHead, &                     ! forcingGroupHead
@@ -610,50 +613,96 @@ contains
          config_time_varying_aot_forcing_cycle_duration, &        ! forcingCycleDuration
          config_do_restart)!, &                  ! restart
          !.false.)                               ! forcingCycleStartInclusive
-
-    ! velocityZonalObs init
+    
+    select case (trim(config_time_varying_aot_data_type))
+    case ('edges')
+    ! normalVelocityObs init
     call MPAS_forcing_init_field(&
          domain % streamManager, &               ! streamManager
          forcingGroupHead, &                     ! forcingGroupHead
          "ocn_aot_forcing", &            ! forcingGroupName
-         "velocityZonalObs", &                         ! forcingName
-         "aot_forcing", &                ! forcingStreamID
+         "normalVelocityObs", &                         ! forcingName
+         "aot_forcing_edges", &                ! forcingStreamID
          "timeVaryingForcing", &                 ! poolname
-         "velocityZonalObs", &                         ! fieldname
-         "linear", &                             ! interpolationType
+         "normalVelocityObs", &                         ! fieldname
+         config_time_varying_aot_forcing_type, &                             ! interpolationType
          config_time_varying_aot_forcing_reference_time, &                 ! forcingReferenceTimeStr
-         config_time_varying_aot_forcing_interval)!,                      ! forcingIntervalStr
-         !"next")                                ! forcingInitializationType
+         config_time_varying_aot_forcing_interval, &                      ! forcingIntervalStr
+         "next")                                ! forcingInitializationType
 
-    ! velocityMeridionalObs init
+    case ('cells')
+      ! velocityZonalObs init
+      call MPAS_forcing_init_field(&
+           domain % streamManager, &               ! streamManager
+           forcingGroupHead, &                     ! forcingGroupHead
+           "ocn_aot_forcing", &            ! forcingGroupName
+           "velocityZonalObs", &                         ! forcingName
+           "aot_forcing_cells", &                ! forcingStreamID
+           "timeVaryingForcing", &                 ! poolname
+           "velocityZonalObs", &                         ! fieldname
+           "linear", &                             ! interpolationType
+           config_time_varying_aot_forcing_reference_time, &                 ! forcingReferenceTimeStr
+           config_time_varying_aot_forcing_interval)!,                      ! forcingIntervalStr
+           !"next")                                ! forcingInitializationType
+  
+      ! velocityMeridionalObs init
+      call MPAS_forcing_init_field(&
+           domain % streamManager, &
+           forcingGroupHead, &
+           "ocn_aot_forcing", &
+           "velocityMeridionalObs", &
+           "aot_forcing_cells", &
+           "timeVaryingForcing", &
+           "velocityMeridionalObs", &
+           "linear", &
+           config_time_varying_aot_forcing_reference_time, &
+           config_time_varying_aot_forcing_interval)!, &
+           !"next")
+    
+    case ('both')
+    ! velocityNormalObs init 
     call MPAS_forcing_init_field(&
-         domain % streamManager, &
-         forcingGroupHead, &
-         "ocn_aot_forcing", &
-         "velocityMeridionalObs", &
-         "aot_forcing", &
-         "timeVaryingForcing", &
-         "velocityMeridionalObs", &
-         "linear", &
-         config_time_varying_aot_forcing_reference_time, &
-         config_time_varying_aot_forcing_interval)!, &
-         !"next")
-    !write (*,*) "Initialized AOT forcing."
-
-!    ! aotForcingMask init
-!    call MPAS_forcing_init_field(&
-!         domain % streamManager, &
-!         forcingGroupHead, &
-!         "ocn_aot_forcing", &
-!         "aotForcingMask", &
-!         "aot_forcing", &
-!         "timeVaryingForcing", &
-!         "aotForcingMask", &
-!         "linear", &
-!         config_time_varying_aot_forcing_reference_time, &
-!         config_time_varying_aot_forcing_interval)
-
-
+         domain % streamManager, &               ! streamManager
+         forcingGroupHead, &                     ! forcingGroupHead
+         "ocn_aot_forcing", &            ! forcingGroupName
+         "normalVelocityObs", &                         ! forcingName
+         "aot_forcing_edges", &                ! forcingStreamID
+         "timeVaryingForcing", &                 ! poolname
+         "normalVelocityObs", &                         ! fieldname
+         config_time_varying_aot_forcing_type, &                             ! interpolationType
+         config_time_varying_aot_forcing_reference_time, &                 ! forcingReferenceTimeStr
+         config_time_varying_aot_forcing_interval, &                      ! forcingIntervalStr
+         "next")                                ! forcingInitializationType
+      ! velocityZonalObs init
+      call MPAS_forcing_init_field(&
+           domain % streamManager, &               ! streamManager
+           forcingGroupHead, &                     ! forcingGroupHead
+           "ocn_aot_forcing", &            ! forcingGroupName
+           "velocityZonalObs", &                         ! forcingName
+           "aot_forcing_cells", &                ! forcingStreamID
+           "timeVaryingForcing", &                 ! poolname
+           "velocityZonalObs", &                         ! fieldname
+           "linear", &                             ! interpolationType
+           config_time_varying_aot_forcing_reference_time, &                 ! forcingReferenceTimeStr
+           config_time_varying_aot_forcing_interval)!,                      ! forcingIntervalStr
+           !"next")                                ! forcingInitializationType
+  
+      ! velocityMeridionalObs init
+      call MPAS_forcing_init_field(&
+           domain % streamManager, &
+           forcingGroupHead, &
+           "ocn_aot_forcing", &
+           "velocityMeridionalObs", &
+           "aot_forcing_cells", &
+           "timeVaryingForcing", &
+           "velocityMeridionalObs", &
+           "linear", &
+           config_time_varying_aot_forcing_reference_time, &
+           config_time_varying_aot_forcing_interval)!, &
+           !"next")
+    
+    
+    end select
 
     call MPAS_forcing_init_field_data(&
          forcingGroupHead, &                     ! forcingGroupHead
@@ -662,7 +711,6 @@ contains
          config_do_restart, &                    ! restart
          .false.)                                ! interpolateAtInit
     ! aotPressure init
-    endif
     !write (*,*) "Finished initializing AOT forcing."
   end subroutine init_aot_forcing!}}}
 
@@ -703,7 +751,7 @@ contains
     integer :: err
     
     !don't try to update data from stream if disabled
-    if (config_disable_loading_aot_forcing) return
+    if (config_aot_obs_gen) return
     ! convert config_dt to real
     call mpas_set_timeInterval(timeStepESMF, timeString=config_dt,ierr=err)
     call mpas_get_timeInterval(timeStepESMF, dt=dtSim)
@@ -738,6 +786,58 @@ contains
    ! end do
   end subroutine aot_forcing!}}}
 
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  ocn_time_varying_forcing_aot_obs_update
+!
+!> \brief Generates observational data to save to file
+!> \author Collin Victor, LANL
+!> \date 9/22/2021
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine ocn_time_varying_forcing_aot_obs_update(timeVaryingForcingPool, statePool)!{{{
+    !------------------------------------------------------------------
+    ! input variables
+    !------------------------------------------------------------------
+    type (mpas_pool_type), intent(in) :: timeVaryingForcingPool 
+    type (mpas_pool_type), intent(in) :: statePool 
+
+    !------------------------------------------------------------------
+    ! local variables
+    !------------------------------------------------------------------
+
+    real (kind=RKIND), dimension(:,:), pointer :: &
+      velocityMeridionalObs,  & !< [in] meridional velocity at cell centers
+      velocityZonalObs,       & !< [in] zonal velocity at cell centers    
+      normalVelocityObs,      & !< [in] normal velocity at edges
+      normalVelocity            !< [in] normal velocity at edges
+
+ 
+  if (.not. config_aot_obs_gen) return
+  select case (trim(config_time_varying_aot_data_type))
+  case ('edges')
+    call mpas_pool_get_array(timeVaryingForcingPool,'normalVelocityObs', normalVelocityObs)
+    call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
+    normalVelocityObs = normalVelocity
+  case ('cells')
+    call mpas_pool_get_array(timeVaryingForcingPool,'velocityZonalObs', velocityZonalObs)
+    call mpas_pool_get_array(timeVaryingForcingPool,'velocityMeridionalObs', velocityMeridionalObs)
+    velocityZonalObs = velocityZonal
+    velocityMeridionalObs = velocityMeridional
+  case ('both')
+    call mpas_pool_get_array(timeVaryingForcingPool,'normalVelocityObs', normalVelocityObs)
+    call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
+    normalVelocityObs = normalVelocity
+    call mpas_pool_get_array(timeVaryingForcingPool,'velocityZonalObs', velocityZonalObs)
+    call mpas_pool_get_array(timeVaryingForcingPool,'velocityMeridionalObs', velocityMeridionalObs)
+    velocityZonalObs = velocityZonal
+    velocityMeridionalObs = velocityMeridional
+  end select
+  end subroutine ocn_time_varying_forcing_aot_obs_update!}}}
 
 end module ocn_time_varying_forcing
 ! vim: foldmethod=marker

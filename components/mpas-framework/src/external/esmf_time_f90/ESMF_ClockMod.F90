@@ -358,6 +358,7 @@
         CALL ESMF_ClockGetStartTime( clock, StartTime=StartTime, rc=ierr )
       ENDIF
       IF ( PRESENT (CurrTime) ) THEN
+!        CALL ESMF_ClockPrint( clock )
         CALL ESMF_ClockGetCurrTime( clock , CurrTime, ierr )
       ENDIF
       IF ( PRESENT (StopTime) ) THEN

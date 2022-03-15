@@ -115,7 +115,7 @@ mpas_ocn_vel_forcing_topographic_wave_drag.o: mpas_ocn_constants.o mpas_ocn_conf
 
 mpas_ocn_vel_forcing_explicit_bottom_drag.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_forcing.o
 
-mpas_ocn_vel_AOT.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_forcing.o
+mpas_ocn_vel_AOT.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_forcing.o mpas_ocn_time_varying_forcing.o
 
 mpas_ocn_vel_hadv_coriolis.o: mpas_ocn_constants.o mpas_ocn_config.o
 

@@ -684,13 +684,21 @@
 			description="If true calculate input forcing fields."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_disable_loading_aot_forcing" type="logical" default_value=".false." units="unitless"
-			description="If true don't attempt to load aot forcing, observational data is from diagnostics."
+		<nml_option name="config_time_varying_aot_forcing_edges" type="logical" default_value=".false." units="unitless"
+			description="If true use normalVelocity to force on edges."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_time_varying_aot_forcing_type" type="character" default_value="INTERP" units="unitless"
+		<nml_option name="config_aot_obs_gen" type="logical" default_value=".false." units="unitless"
+			description="If true don't attempt to load aot forcing, instead generate observational data from diagnostic variables."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_time_varying_aot_data_type" type="character" default_value="cells" units="unitless"
+			description="Type of data for aot forcing type. This is cell or edge valued quantities, or both in the case of saving observational data to file."
+			possible_values="'cells', 'edges', 'both'"
+		/>
+		<nml_option name="config_time_varying_aot_forcing_type" type="character" default_value="linear" units="unitless"
 			description="aot forcing type."
-			possible_values="'INTERP' or 'CONSTANT'"
+			possible_values="'linear' or 'constant'"
 		/>
 		<nml_option name="config_time_varying_aot_forcing_start_time" type="character" default_value="0001-01-01_00:00:00" units="unitless"
 			description="Forcing time to use at the simulation start time"
@@ -997,10 +1005,6 @@
 		/>
 		<nml_option name="config_use_aot" type="logical" default_value=".false." units="unitless"
 					description="If true, AOT forcing is used on the momentum equation."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_aot_obs_generator" type="logical" default_value=".false." units="unitless"
-					description="If true, the  AOT forcing module is used only to generate observations."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_aot_coeff" type="real" default_value="1.0e-3" units="unitless"
@@ -1864,15 +1868,24 @@
 			<var name="landIceFractionForcing"/>
 			<var name="landIceDraftForcing"/>
 		</stream>
-		<stream name="aot_forcing"
+		<stream name="aot_forcing_cells"
 				type="input"
-				filename_template="aot_forcing.nc"
-				filename_interval="none"
-				input_interval="initial_only"
+				filename_template="aot_forcing/aot_forcing.$Y-$M-$D.nc"
+				filename_interval="0000-00-01_00:00:00"
+				input_interval="0000-00-01_00:00:00"
 				packages="timeVaryingAOTForcingPKG"
 				immutable="true">
 			<var name="velocityZonalObs"/>
 			<var name="velocityMeridionalObs"/>
+		</stream>
+		<stream name="aot_forcing_edges"
+				type="input"
+				filename_template="aot_forcing/aot_forcing.$Y-$M-$D.nc"
+				filename_interval="0000-00-01_00:00:00"
+				input_interval="0000-00-01_00:00:00"
+				packages="timeVaryingAOTForcingPKG"
+				immutable="true">
+			<var name="normalVelocityObs"/>
 		</stream>
 <!--
 		<stream name="aot_mask"
@@ -3609,6 +3622,10 @@
 		/>
 		<var name="velocityMeridionalObs" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="component of horizontal velocity in the northward direction"
+			 packages="timeVaryingAOTForcingPKG"
+		/>
+		<var name="normalVelocityObs" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+			 description="normal velocity observed at cell edges"
 			 packages="timeVaryingAOTForcingPKG"
 		/>
 
