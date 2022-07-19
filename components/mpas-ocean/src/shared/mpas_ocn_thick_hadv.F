@@ -126,6 +126,33 @@ contains
 
       call mpas_timer_start("thick hadv")
 
+      if (config_linearize_thick_hadv) then
+#ifdef MPAS_OPENACC
+      !$acc parallel loop &
+      !$acc     present(tend, normalVelocity, dvEdge, &
+      !$acc             refLayerThickness, edgeSignOnCell, &
+      !$acc             minLevelEdgeBot, maxLevelEdgeBot) &
+      !$acc     private(i, k, invAreaCell, flux)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime) private(invAreaCell, i, iEdge, k, flux)
+#endif
+      do iCell = 1, nCellsOwned
+        invAreaCell = 1.0_RKIND / areaCell(iCell)
+        do i = 1, nEdgesOnCell(iCell)
+          iEdge = edgesOnCell(i, iCell)
+          do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+            flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * refLayerThickness(k)
+            tend(k, iCell) = tend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell
+          end do
+        end do
+      end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+
+      else
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc     present(tend, normalVelocity, dvEdge, &
@@ -150,7 +177,7 @@ contains
       !$omp end do
       !$omp end parallel
 #endif
-
+      endif
       call mpas_timer_stop("thick hadv")
 
    !--------------------------------------------------------------------

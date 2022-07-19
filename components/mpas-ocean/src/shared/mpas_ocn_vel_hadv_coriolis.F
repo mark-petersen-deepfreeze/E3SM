@@ -59,6 +59,13 @@ module ocn_vel_hadv_coriolis
       usePlanetVorticity   ! multiplicative mask for including
                            ! planetary vorticity term
 
+   logical :: &
+      useRelativeVorticity   ! multiplicative mask for including
+                             ! relative vorticity term
+   integer :: gradKEOn ! Turn on gradient of kinetic energy term
+   integer :: relVorOn ! Turn on relative vorticity term
+   integer :: planVorOn ! Turn on planetary vorticity term
+
 !***********************************************************************
 
 contains
@@ -133,6 +140,8 @@ contains
 
       err = 0
       if (hadvCoriolisDisabled) return
+      if (relVorOn.eq.0.and.gradKEOn.eq.0) return
+
       call mpas_timer_start("coriolis")
 
       !*** allocate and transfer temporary arrays
@@ -156,8 +165,8 @@ contains
 #endif
          do iEdge = 1, nEdgesAll
          do k=1,nVertLevels
-            tmpVorticity(k,iEdge) = normRelVortEdge(k,iEdge) + &
-                                 normPlanetVortEdge(k,iEdge)
+            tmpVorticity(k,iEdge) = relVorOn*normRelVortEdge(k,iEdge) + &
+                                 planVorOn*normPlanetVortEdge(k,iEdge)
          end do
          end do
 #ifndef MPAS_OPENACC
@@ -174,7 +183,7 @@ contains
 #endif
          do iEdge = 1, nEdgesAll
          do k=1,nVertLevels
-            tmpVorticity(k,iEdge) = normRelVortEdge(k,iEdge)
+            tmpVorticity(k,iEdge) = relVorOn*normRelVortEdge(k,iEdge)
          end do
          end do
 #ifndef MPAS_OPENACC
@@ -243,7 +252,7 @@ contains
          do k = kmin, kmax
             tend(k,iEdge) = tend(k,iEdge) + &
                         edgeMask(k,iEdge)* (qArr(k,iEdge) - &
-                           (kineticEnergyCell(k,cell2) &
+                           gradKEOn*(kineticEnergyCell(k,cell2) &
                           - kineticEnergyCell(k,cell1))*invLength)
          end do
       end do
@@ -292,10 +301,21 @@ contains
 
       hadvCoriolisDisabled = .false.
       usePlanetVorticity   = .false.
+      useRelativeVorticity   = .false.
+      gradKEOn = 1
+      relVorOn = 1
+      planVorOn = 1
 
       !*** Reset module variables based in input configuration
 
       if ( config_disable_vel_coriolis ) hadvCoriolisDisabled = .true.
+      if ( config_disable_vel_coriolis ) hadvCoriolisDisabled = .true.
+
+      ! In (eta+f)/h, do not add eta/h. Also do not add grad(KE)
+      if ( config_disable_vel_hadv ) then
+         relVorOn = 0
+         gradKEOn = 0
+      end if
 
       select case (trim(config_time_integrator))
       case ('RK4','rk4')

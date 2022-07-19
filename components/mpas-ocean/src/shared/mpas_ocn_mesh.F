@@ -121,6 +121,7 @@ module ocn_mesh
       areaTriangle, &! area of each cell on dual grid
       bottomDepth, &! ocean bottom depth at each cell center
       refBottomDepth, &! ocean depth at bottom of cell for reference profile
+      refLayerThickness, &! 
       refBottomDepthTopOfCell, &! depth at top of cell for reference profile
       vertCoordMovementWeights, &! weights for distributing height perturb
       meshScalingDel2, &! mesh scaling factor for use in del2 diffusion
@@ -441,6 +442,8 @@ contains
                                bottomDepth)
       call mpas_pool_get_array(meshPool, 'refBottomDepth', &
                                refBottomDepth)
+      call mpas_pool_get_array(meshPool, 'refLayerThickness', &
+                               refLayerThickness)
       call mpas_pool_get_array(meshPool, 'refBottomDepthTopOfCell', &
                                refBottomDepthTopOfCell)
       call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights', &
@@ -637,6 +640,7 @@ contains
          !$acc                   areaTriangle,             &
          !$acc                   bottomDepth,              &
          !$acc                   refBottomDepth,           &
+         !$acc                   refLayerThickness,  &
          !$acc                   refBottomDepthTopOfCell,  &
          !$acc                   vertCoordMovementWeights, &
          !$acc                   meshScalingDel2,          &
@@ -767,6 +771,7 @@ contains
       !$acc                  areaTriangle,      &
       !$acc                  bottomDepth,       &
       !$acc                  refBottomDepth,    &
+      !$acc                  refLayerThickness, &
       !$acc                  refBottomDepthTopOfCell, &
       !$acc                  vertCoordMovementWeights, &
       !$acc                  meshScalingDel2,   &
@@ -857,6 +862,7 @@ contains
                areaTriangle, &
                bottomDepth, &
                refBottomDepth, &
+               refLayerThickness, &
                refBottomDepthTopOfCell, &
                vertCoordMovementWeights, &
                meshScalingDel2, &
@@ -1041,6 +1047,8 @@ contains
       !                                    bottomDepth)
       !call mpas_pool_get_array(meshPool, 'refBottomDepth',    &
       !                                    refBottomDepth)
+      !call mpas_pool_get_array(meshPool, 'refLayerThickness',   &
+      !                                    refLayerThickness)
       !call mpas_pool_get_array(meshPool, 'refBottomDepthTopOfCell',   &
       !                                    refBottomDepthTopOfCell)
       !call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights',  &
@@ -1198,6 +1206,7 @@ contains
       !$acc               areaTriangle,             &
       !$acc               bottomDepth,              &
       !$acc               refBottomDepth,           &
+      !$acc               refLayerThickness,  &
       !$acc               refBottomDepthTopOfCell,  &
       !$acc               vertCoordMovementWeights, &
       !$acc               meshScalingDel2,          &
