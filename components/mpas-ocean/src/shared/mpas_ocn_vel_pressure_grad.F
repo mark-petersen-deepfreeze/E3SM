@@ -213,6 +213,12 @@ contains
                                (  gravity*(ssh(cell2) - ssh(cell1)) &
                                 + density0Inv*(  surfacePressure(cell2) &
                                                - surfacePressure(cell1)) )
+!            if (iEdge<100) then
+!               print *, 'ssh ',iEdge, edgeMask(k,iEdge)*invdcEdge* &
+!                              - (  gravity*(ssh(cell2) - ssh(cell1)) &
+!                                + density0Inv*(  surfacePressure(cell2) &
+!                                               - surfacePressure(cell1)) )
+!            endif
             end do
          end do
 #ifndef MPAS_OPENACC
@@ -250,6 +256,22 @@ contains
                                - gdensity0Inv*0.5_RKIND* &
                                  (density(k,cell1)+density(k,cell2))* &
                                  (zMid(k,cell2)-zMid(k,cell1)))
+!            if (iEdge<100) then
+!               print *, 'pzg ',iEdge,&
+!                               edgeMask(k,iEdge)*invdcEdge*( &
+!                               - density0Inv*(pressure(k,cell2) - &
+!                                              pressure(k,cell1)) &
+!                               - gdensity0Inv*0.5_RKIND* &
+!                                 (density(k,cell1)+density(k,cell2))* &
+!                                 (zMid(k,cell2)-zMid(k,cell1))), &
+!                               edgeMask(k,iEdge)*invdcEdge*( &
+!                               - density0Inv*(pressure(k,cell2) - &
+!                                              pressure(k,cell1)) ), &
+!                               edgeMask(k,iEdge)*invdcEdge*( &
+!                               - gdensity0Inv*0.5_RKIND* &
+!                                 (density(k,cell1)+density(k,cell2))* &
+!                                 (zMid(k,cell2)-zMid(k,cell1)))
+!            endif
             end do
          end do
 #ifndef MPAS_OPENACC

@@ -22,6 +22,7 @@ module ocn_equation_of_state_linear
 
    use mpas_kind_types
    use ocn_config
+   use ocn_constants
 
    implicit none
    private
@@ -220,6 +221,7 @@ contains
       endif
 
       !-----------------------------------------------------------------
+density = rho_sw
 
    end subroutine ocn_equation_of_state_linear_density_only!}}}
 
@@ -390,6 +392,7 @@ contains
       endif
 
       !-----------------------------------------------------------------
+density = rho_sw
 
    end subroutine ocn_equation_of_state_linear_density_exp!}}}
 
