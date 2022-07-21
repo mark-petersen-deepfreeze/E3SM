@@ -2380,6 +2380,7 @@ contains
             kmax = maxLevelEdgeTop(iEdge)
 
             do k = kmin, kmax
+               !print *, iCell, i, k, normalVelocity(k, iEdge), dvEdge(iEdge), edgeSignOnCell(i, iCell), invAreaCell1
                flux = layerThicknessEdgeFlux(k, iEdge) * normalVelocity(k, iEdge) * dvEdge(iEdge) * edgeSignOnCell(i, iCell) &
                     * invAreaCell1
                div_hu(k,iCell) = div_hu(k,iCell) - flux

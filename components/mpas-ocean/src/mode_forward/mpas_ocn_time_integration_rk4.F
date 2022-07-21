@@ -579,6 +579,7 @@ module ocn_time_integration_rk4
       ! END RK loop
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+!print *, 'END RK loop'
       ! verify that cells are not dry at conclusion of time step
       if (config_use_wetting_drying) then
         call mpas_timer_start("RK4- check wet cells")
@@ -1451,6 +1452,9 @@ module ocn_time_integration_rk4
       end do
       !$omp end do
       !$omp end parallel
+
+!print *, 'normalVelocity ', minval(normalVelocityNew(:, 1:nEdges)), maxval(normalVelocityNew(:, 1:nEdges))
+!print *, 'layerThickness ', minval(layerThicknessNew(:, 1:nCells)), maxval(layerThicknessNew(:, 1:nCells))
 
       call mpas_pool_begin_iteration(tracersPool)
       do while ( mpas_pool_get_next_member(tracersPool, groupItr) )

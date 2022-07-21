@@ -111,6 +111,7 @@ contains
       integer :: iEdge, k, i, iCell
 
       real (kind=RKIND) :: flux, invAreaCell
+      real (kind=RKIND), dimension(:), allocatable :: refLayerThicknessTmp
 
       !-----------------------------------------------------------------
       !
@@ -127,10 +128,17 @@ contains
       call mpas_timer_start("thick hadv")
 
       if (config_linearize_thick_hadv) then
+      allocate(refLayerThicknessTmp(nVertLevels))
+      refLayerThicknessTmp(1) = refBottomDepth(1)
+      do k = 2, nVertLevels
+         refLayerThicknessTmp(k) = refBottomDepth(k) - &
+                                refBottomDepth(k-1)
+      end do
+
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc     present(tend, normalVelocity, dvEdge, &
-      !$acc             refLayerThickness, edgeSignOnCell, &
+      !$acc             edgeSignOnCell, &
       !$acc             minLevelEdgeBot, maxLevelEdgeBot) &
       !$acc     private(i, k, invAreaCell, flux)
 #else
@@ -142,7 +150,7 @@ contains
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
           do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
-            flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * refLayerThickness(k)
+            flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * refLayerThicknessTmp(k)
             tend(k, iCell) = tend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell
           end do
         end do
@@ -151,6 +159,7 @@ contains
       !$omp end do
       !$omp end parallel
 #endif
+      deallocate(refLayerThicknessTmp)
 
       else
 #ifdef MPAS_OPENACC
