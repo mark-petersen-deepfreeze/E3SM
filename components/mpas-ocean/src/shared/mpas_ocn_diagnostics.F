@@ -2563,9 +2563,6 @@ contains
       ! ALE_Thickness: ALE thickness at new time
       !         units: none
       real (kind=RKIND), dimension(:,:), allocatable :: ALE_Thickness
-#ifdef MPAS_OPENACC
-      !$acc declare device_resident(div_hu)
-#endif
 
       err = 0
 
@@ -2591,19 +2588,6 @@ contains
       ! thickness-weighted divergence and barotropic divergence
       !
       ! See Ringler et al. (2010) jcp paper, eqn 19, 21, and fig. 3.
-#ifdef MPAS_OPENACC
-      !$acc enter data create(projectedSSH, ALE_Thickness) &
-      !$acc            copyin(edgeSignOnCell)
-
-      !$acc parallel loop &
-      !$acc          present(invAreaCell, nEdgesOnCell, edgesOnCell, maxLevelEdgeTop, &
-      !$acc                  layerThicknessEdgeFlux, normalVelocity, dvEdge, edgeSignOnCell, &
-      !$acc                  oldSSH, projectedSSH, minLevelEdgeBot) &
-      !$acc          private(div_hu_btr, invAreaCell1, i, iEdge, flux, k, kmin, kmax)
-#else
-      !$omp parallel
-      !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, k, flux, div_hu_btr, kmin, kmax)
-#endif
       do iCell = 1, nCells
          div_hu(:,iCell) = 0.0_RKIND
          div_hu_btr = 0.0_RKIND
@@ -2622,22 +2606,11 @@ contains
          end do
          projectedSSH(iCell) = oldSSH(iCell) - dt*div_hu_btr
       end do
-#ifdef MPAS_OPENACC
-      !$acc update host(projectedSSH)
-      !$acc exit data delete(edgeSignOnCell)
-#else
-      !$omp end do
-      !$omp end parallel
-#endif
 
       !
       ! Compute desired thickness at new time
       !
-      if (present(newHighFreqThickness)) then
-        call ocn_ALE_thickness(meshPool, verticalMeshPool, projectedSSH, ALE_thickness, err, newHighFreqThickness)
-      else
         call ocn_ALE_thickness(meshPool, verticalMeshPool, projectedSSH, ALE_thickness, err)
-      endif
 
       !
       ! Vertical transport through layer interfaces
@@ -2645,18 +2618,6 @@ contains
       ! Vertical transport through layer interface at top and bottom is zero.
       ! Here we are using solving the continuity equation for vertAleTransportTop ($w^t$),
       ! and using ALE_Thickness for thickness at the new time.
-
-#ifdef MPAS_OPENACC
-      !$acc update device(ALE_Thickness)
-
-      !$acc parallel loop gang vector &
-      !$acc          present(vertAleTransportTop, maxLevelCell, ALE_Thickness, &
-      !$acc                  oldLayerThickness, minLevelCell) &
-      !$acc          private(k)
-#else
-      !$omp parallel
-      !$omp do schedule(runtime) private(k)
-#endif
       do iCell = 1,nCells
          vertAleTransportTop(1,iCell) = 0.0_RKIND
          vertAleTransportTop(maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
@@ -2665,12 +2626,6 @@ contains
               - (ALE_Thickness(k,iCell) - oldLayerThickness(k,iCell))/dt
          end do
       end do
-#ifdef MPAS_OPENACC
-      !$acc exit data delete(projectedSSH, ALE_Thickness)
-#else
-      !$omp end do
-      !$omp end parallel
-#endif
 
       deallocate(div_hu, &
                  projectedSSH, &

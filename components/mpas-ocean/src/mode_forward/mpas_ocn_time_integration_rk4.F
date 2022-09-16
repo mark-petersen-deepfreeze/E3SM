@@ -345,8 +345,9 @@ module ocn_time_integration_rk4
 
         block => domain % blocklist
         do while (associated(block))
+!mrp vel tend
            call ocn_time_integrator_rk4_compute_vel_tends(domain, block, dt, rk_substep_weights(rk_step), domain % dminfo, err )
-
+!mrp thick tend
            call ocn_time_integrator_rk4_compute_thick_tends( block, dt, rk_substep_weights(rk_step), err )
            block => block % next
         end do
@@ -366,6 +367,7 @@ module ocn_time_integration_rk4
 
         block => domain % blocklist
         do while (associated(block))
+!mrp tracer tend
            call ocn_time_integrator_rk4_compute_tracer_tends( block, dt, rk_substep_weights(rk_step), err )
            block => block % next
         end do
@@ -394,6 +396,7 @@ module ocn_time_integration_rk4
         if (rk_step < 4) then
            block => domain % blocklist
            do while (associated(block))
+!mrp add tends to *provis time and diagnostics: u* = u_n + a_j*Tu
               call ocn_time_integrator_rk4_diagnostic_update(block, dt, rk_substep_weights(rk_step), err)
               block => block % next
            end do
@@ -410,6 +413,7 @@ module ocn_time_integration_rk4
 
         block => domain % blocklist
         do while (associated(block))
+!mrp add tends to n+1
            call ocn_time_integrator_rk4_accumulate_update(block, rk_weights(rk_step), err)
 
            block => block % next
