@@ -32,6 +32,8 @@ module ocn_time_integration_rk4
    use ocn_tendency
    use ocn_diagnostics
    use ocn_diagnostics_variables
+   use ocn_gm
+   use ocn_submesoscale_eddies
 
    use ocn_equation_of_state
    use ocn_vmix
@@ -117,6 +119,7 @@ module ocn_time_integration_rk4
       integer, pointer :: nCells, nEdges, nVertLevels, num_tracers
 
       ! Config options
+      logical, pointer :: config_use_GM
       logical, pointer :: config_use_cvmix_kpp
       logical, pointer :: config_use_tracerGroup
       logical, pointer :: config_disable_thick_all_tend
@@ -167,6 +170,7 @@ module ocn_time_integration_rk4
 
       ! Get config options
       call mpas_pool_get_config(domain % configs, 'config_mom_del4', config_mom_del4)
+      call mpas_pool_get_config(domain % configs, 'config_use_GM', config_use_GM)
       call mpas_pool_get_config(domain % configs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
       call mpas_pool_get_config(domain % configs, 'config_disable_vel_all_tend', config_disable_vel_all_tend)
       call mpas_pool_get_config(domain % configs, 'config_disable_thick_all_tend', config_disable_thick_all_tend)
@@ -502,6 +506,27 @@ module ocn_time_integration_rk4
          !$omp end do
          !$omp end parallel
 
+         ! add submesoscale aend gm components if requested
+         call ocn_GM_add_to_transport_vel(normalTransportVelocity, nEdges, nVertLevels)
+         call ocn_MLE_add_to_transport_vel(normalTransportVelocity, nEdges)
+
+         ! ------------------------------------------------------------------
+         ! End: Accumulating various parameterizations of the transport velocity
+         ! ------------------------------------------------------------------
+
+         call mpas_reconstruct(meshPool,  normalVelocityNew, &
+                          velocityX, velocityY, velocityZ,   &
+                          velocityZonal, velocityMeridional, &
+                          includeHalos = .true.)
+
+         call mpas_reconstruct(meshPool, gradSSH,          &
+                          gradSSHX, gradSSHY, gradSSHZ,    &
+                          gradSSHZonal, gradSSHMeridional, &
+                          includeHalos = .true.)
+         if (config_use_GM .or. config_submesoscale_enable) then
+            call ocn_reconstruct_eddy_vectors(meshPool)
+         end if
+
          block => block % next
       end do
 
@@ -604,6 +629,20 @@ module ocn_time_integration_rk4
 
       call mpas_pool_get_array(provisStatePool, 'normalVelocity', normalVelocityProvis, 1)
 
+      if (config_use_GM .or. config_submesoscale_enable) then
+         !$omp parallel
+         !$omp do schedule(runtime)
+         do iEdge = 1, nEdges
+            normalTransportVelocity(:, iEdge) = normalVelocityProvis(:, iEdge)
+         end do
+         !$omp end do
+         !$omp end parallel
+      end if
+
+      ! add submesoscale and GM contributions if requested
+      call ocn_GM_add_to_transport_vel(normalTransportVelocity, nEdges, nVertLevels)
+      call ocn_MLE_add_to_transport_vel(normalTransportVelocity, nEdges)
+
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
             layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
             sshCur, rkSubstepWeight, &
@@ -651,6 +690,18 @@ module ocn_time_integration_rk4
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityCur, 1)
 
       call mpas_pool_get_array(provisStatePool, 'normalVelocity', normalVelocityProvis, 1)
+      if (config_use_GM .or. config_submesoscale_enable) then
+         !$omp parallel
+         !$omp do schedule(runtime)
+         do iEdge = 1, nEdges
+            normalTransportVelocity(:, iEdge) = normalVelocityProvis(:, iEdge)
+         end do
+         !$omp end do
+         !$omp end parallel
+      end if
+
+      call ocn_GM_add_to_transport_vel(normalTransportVelocity, nEdges, nVertLevels)
+      call ocn_MLE_add_to_transport_vel(normalTransportVelocity, nEdges)
 
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
             layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
@@ -725,6 +776,7 @@ module ocn_time_integration_rk4
       real (kind=RKIND), intent(in) :: rkSubstepWeight
       integer, intent(out) :: err
 
+      logical, pointer :: config_prescribe_velocity, config_prescribe_thickness, config_use_GM
       integer, pointer :: nCells, nEdges, nVertLevels
       integer :: iCell, iEdge, k
 
@@ -750,6 +802,8 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracersCur
 
       err = 0
+
+      call mpas_pool_get_config(block % configs, 'config_use_GM', config_use_GM)
 
       call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
       call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
@@ -847,6 +901,10 @@ module ocn_time_integration_rk4
       end do
       !$omp end do
       !$omp end parallel
+
+      ! add submesoscale and GM contributions if requested
+      call ocn_GM_add_to_transport_vel(normalTransportVelocity, nEdges, nVertLevels)
+      call ocn_MLE_add_to_transport_vel(normalTransportVelocity, nEdges)
 
       ! ------------------------------------------------------------------
       ! End: Accumulating various parametrizations of the transport velocity
