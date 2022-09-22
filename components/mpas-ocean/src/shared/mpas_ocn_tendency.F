@@ -207,7 +207,7 @@ contains
                                layerThickEdgeFlux, tendThick, err)
 
       ! Compute vertical advection term -d/dz(hw)
-      call ocn_thick_vadv_tend(vertAleTransportTop, &
+      call ocn_thick_vadv_tend(vertTransportVelocityTop, &
                                tendThick, err)
 
       ! Compute surface flux tendency
@@ -351,7 +351,7 @@ contains
       !$acc               density, normRelVortEdge, montgomeryPotential, pressure, &
       !$acc               thermExpCoeff, salineContractCoeff, tangentialVelocity, &
       !$acc               layerThickEdgeFlux, kineticEnergyCell, sfcFlxAttCoeff, potentialDensity, &
-      !$acc               vertAleTransportTop, vertViscTopOfEdge, wettingVelocity)
+      !$acc               vertVelocityTop, vertViscTopOfEdge, wettingVelocity)
       !$acc enter data &
       !$acc    copyin(tendVel, sfcStress, sfcStressMag, &
       !$acc    ssh, normalVelocity, &
@@ -412,7 +412,7 @@ contains
 
       ! Add vertical advection term -w du/dz
       call ocn_vel_vadv_tend(normalVelocity, layerThickEdgeFlux, &
-                             vertAleTransportTop, tendVel, err)
+                             vertVelocityTop, tendVel, err)
 
       ! Add pressure gradient
       call ocn_vel_pressure_grad_tend(ssh, pressure, surfacePressure, &
@@ -664,7 +664,7 @@ contains
       !TEMPORARY - once diagnotics module ported, these should already
       !            be on the device
       !$acc update device (normalTransportVelocity, layerThickEdgeFlux, &
-      !$acc                vertAleTransportTop)
+      !$acc                vertVelocityTop)
 
       ! compute transport velocity to use for all tracers
 #ifdef MPAS_OPENACC
@@ -1096,7 +1096,7 @@ contains
          ! Tracer budget is computed and stored within the tracer adv
          ! routine
          call ocn_tracer_advection_tend(tracerGroup, &
-                            normalThicknessFlux, vertAleTransportTop, &
+                            normalThicknessFlux, vertTransportVelocityTop, &
                             layerThickness, dt, tracerGroupTend, &
                             computeBudgets)
 
