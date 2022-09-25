@@ -1930,7 +1930,7 @@ contains
       !$omp end parallel
 #endif
 
-      deallocate(div_hu,div_huTransport,areaSum)
+      deallocate(div_hu,div_huTransport)
 
       nEdges = nEdgesHalo( 2 )
 #ifdef MPAS_OPENACC
@@ -1944,6 +1944,7 @@ contains
 #endif
       do iEdge = 1, nEdges
          tangentialVelocity(:, iEdge) = 0.0_RKIND
+         areaSum(:) = 0.0_RKIND
          ! Compute v (tangential) velocities
          do i = 1, nEdgesOnEdge(iEdge)
             eoe = edgesOnEdge(i,iEdge)
@@ -1951,7 +1952,11 @@ contains
             do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                tangentialVelocity(k,iEdge) = tangentialVelocity(k,iEdge) &
                                               + weightsOnEdge_temp * normalVelocity(k, eoe)
+               areaSum(k) = areaSum(k) + weightsOnEdge_temp
             end do
+         end do
+         do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+            tangentialVelocity(k,iEdge) = tangentialVelocity(k,iEdge) / areaSum(k)
          end do
       end do
 #ifndef MPAS_OPENACC
@@ -1959,6 +1964,7 @@ contains
       !$omp end parallel
 #endif
 
+   deallocate(areaSum)
    end subroutine ocn_diagnostic_solve_vortVel!}}}
 
 !***********************************************************************
