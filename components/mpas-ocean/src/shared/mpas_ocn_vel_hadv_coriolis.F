@@ -242,9 +242,9 @@ contains
 
          do k = kmin, kmax
             tend(k,iEdge) = tend(k,iEdge) + &
-                        edgeMask(k,iEdge)* (qArr(k,iEdge) - &
-                           (kineticEnergyCell(k,cell2) &
-                          - kineticEnergyCell(k,cell1))*invLength)
+                        edgeMask(k,iEdge)* (qArr(k,iEdge) ) !- &
+                          ! (kineticEnergyCell(k,cell2) &
+                          !- kineticEnergyCell(k,cell1))*invLength)
          end do
       end do
 #ifndef MPAS_OPENACC
