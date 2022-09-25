@@ -156,8 +156,10 @@ contains
 #endif
          do iEdge = 1, nEdgesAll
          do k=1,nVertLevels
-            tmpVorticity(k,iEdge) = normRelVortEdge(k,iEdge) + &
-                                 normPlanetVortEdge(k,iEdge)
+            !tmpVorticity(k,iEdge) = normRelVortEdge(k,iEdge) + &
+            !                     normPlanetVortEdge(k,iEdge)
+            ! mrp turn off relative vorticity
+            tmpVorticity(k,iEdge) = normPlanetVortEdge(k,iEdge)
          end do
          end do
 #ifndef MPAS_OPENACC
