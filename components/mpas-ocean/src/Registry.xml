@@ -1165,6 +1165,14 @@
 					description="The meridional (y) ssh gradient to be applied."
 					possible_values="any real"
 		/>
+		<nml_option name="config_use_bottom_back_pressure" type="logical" default_value=".false."
+					description="If true, apply bottom back pressure. -c*g* grad(w*dt)"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_bottom_back_pressure_coef" type="real" default_value="60.0" units="s"
+					description="The bottom back pressure coefficient"
+					possible_values="any real"
+		/>
 	</nml_record>
 	<nml_record name="eos">
 		<nml_option name="config_eos_type" type="character" default_value="linear"

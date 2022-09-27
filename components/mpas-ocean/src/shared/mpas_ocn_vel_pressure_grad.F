@@ -98,7 +98,7 @@ contains
                                   density, potentialDensity, &
                                   indxT, indxS, tracers, &
                                   thermExpCoeff, salineContractCoeff, &
-                                  tend, err)!{{{
+                                  tend, vertVelocityTop, err)!{{{
 
       implicit none
 
@@ -120,6 +120,8 @@ contains
          zMid,                &!< [in] z-coordinate at layer mid-depth
          density,             &!< [in] density
          potentialDensity      !< [in] potentialDensity
+
+      real (kind=RKIND), dimension(:,:), pointer :: vertVelocityTop
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          thermExpCoeff,       &!< [in] in situ thermal expansion coeff
@@ -586,6 +588,39 @@ contains
 
       end select ! pGradType
 
+      if (config_use_bottom_back_pressure) then
+         ! Add pressure for back pressure
+
+#ifdef MPAS_OPENACC
+         !$acc parallel loop &
+         !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, dcEdge, &
+         !$acc            tend, edgeMask, ssh,surfacePressure) &
+         !$acc    private(cell1, cell2, invdcEdge, k, kMin, kMax)
+#else
+         !$omp parallel
+         !$omp do schedule(runtime) &
+         !$omp    private(cell1, cell2, invdcEdge, k, kMin, kMax)
+#endif
+         do iEdge=1,nEdgesOwned
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            invdcEdge = 1.0_RKIND / dcEdge(iEdge)
+            !kMin = minLevelEdgeBot(iEdge)
+            kMax = maxLevelEdgeTop(iEdge)
+
+            !do k=kMin,kMax
+            k = kMax
+               tend(k,iEdge) = tend(k,iEdge) - &
+                               edgeMask(k,iEdge)*invdcEdge* &
+                               (  gravity*config_bottom_back_pressure_coef* &
+                               (vertVelocityTop(k,cell2) - vertVelocityTop(k,cell1)))
+            !end do
+         end do
+#ifndef MPAS_OPENACC
+         !$omp end do
+         !$omp end parallel
+#endif
+      end if
       call mpas_timer_stop("pressure grad")
 
    !--------------------------------------------------------------------

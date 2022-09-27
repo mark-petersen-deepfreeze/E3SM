@@ -420,7 +420,7 @@ contains
                                density, potentialDensity, &
                                indxTemp, indxSalt, activeTracers, &
                                thermExpCoeff, salineContractCoeff, &
-                               tendVel, err)
+                               tendVel, vertVelocityTop, err)
 
       ! Compute ssh additions due to self-attraction and loading
       if(mpas_is_alarm_ringing(domain % clock, 'salComputeAlarm', ierr=err)) then 
