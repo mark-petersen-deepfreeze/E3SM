@@ -206,7 +206,7 @@ contains
            factor = 1.0 - distance**2 / config_soma_domain_width**2
 
            if(factor > config_soma_shelf_width) then
-              bottomDepth(iCell) = config_soma_shelf_depth + 1.2*(config_soma_bottom_depth-config_soma_shelf_depth)/2.0_RKIND &
+              bottomDepth(iCell) = config_soma_shelf_depth + (config_soma_bottom_depth-config_soma_shelf_depth)/2.0_RKIND &
                                  * (1.0 + tanh(factor/config_soma_phi))
            else
               bottomDepth(iCell) = -1.0_RKIND
@@ -233,8 +233,6 @@ contains
                       exit
                   end if
                 end do
-                ! hardcode z-level here:
-                bottomDepth(iCell) = refBottomDepth(maxLevelCell(iCell))
              end if
            end if
 
