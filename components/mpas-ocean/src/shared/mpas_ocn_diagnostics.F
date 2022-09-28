@@ -1824,7 +1824,7 @@ contains
       real(kind=RKIND) :: invAreaCell1
       real(kind=RKIND) :: dcEdge_temp, dvEdge_temp, r_tmp, weightsOnEdge_temp
 
-      real (kind=RKIND), dimension(:), allocatable:: div_hu,div_huTransport,areaSum
+      real (kind=RKIND), dimension(:), allocatable:: div_hu,div_huTransport
 
 #ifdef MPAS_OPENACC
       !$acc declare device_resident(div_hu, div_huTransport)
@@ -1868,7 +1868,7 @@ contains
       !
       ! Compute divergence, kinetic energy, and vertical velocity
       !
-      allocate(div_hu(nVertLevels),div_huTransport(nVertLevels), areaSum(nVertLevels))
+      allocate(div_hu(nVertLevels),div_huTransport(nVertLevels))
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop gang vector &
@@ -1890,7 +1890,6 @@ contains
          kineticEnergyCell(:, iCell) = 0.0_RKIND
          div_hu(:) = 0.0_RKIND
          div_huTransport(:) = 0.0_RKIND
-         areaSum(:) = 0.0_RKIND
          invAreaCell1 = invAreaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
@@ -1902,20 +1901,13 @@ contains
 
                divergence(k, iCell) = divergence(k, iCell) - edgeSignOnCell_temp * r_tmp
                div_hu(k) = div_hu(k) - layerThicknessEdgeFlux(k, iEdge) * edgeSignOnCell_temp * r_tmp
+               kineticEnergyCell(k, iCell) = kineticEnergyCell(k, iCell) &
+                                              + 0.25 * r_tmp * dcEdge_temp * normalVelocity(k,iEdge)
                ! Compute vertical velocity from the horizontal total transport
                div_huTransport(k) = div_huTransport(k) &
                                     - layerThicknessEdgeFlux(k, iEdge) * edgeSignOnCell_temp &
                                     * dvEdge_temp * normalTransportVelocity(k, iEdge) * invAreaCell1
             end do
-            do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
-               r_tmp = dvEdge_temp * normalVelocity(k, iEdge) 
-               kineticEnergyCell(k, iCell) = kineticEnergyCell(k, iCell) &
-                                              + 0.25 * r_tmp * dcEdge_temp * normalVelocity(k,iEdge)
-               areaSum(k) = areaSum(k) + 0.5_RKIND*dvEdge_temp*dcEdge_temp
-            end do
-         end do
-         do k = minLevelCell(iCell), maxLevelCell(iCell)
-            kineticEnergyCell(k, iCell) = kineticEnergyCell(k, iCell) / areaSum(k)
          end do
          ! Vertical velocity at bottom (maxLevelCell(iCell)+1) is zero, initialized above.
          vertVelocityTop(1:minLevelCell(iCell)-1, iCell) = 0.0_RKIND
