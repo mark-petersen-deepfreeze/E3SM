@@ -313,9 +313,9 @@ contains
            latCurrent = latCell(iCell)
 
            ! Set initial temperature and salinity
+           zMid = 0.0_RKIND
            do k = 1, nVertLevels
-              zMid = refZMid(k)
-
+              zMid = zMid + 0.5_RKIND*layerThickness(k, iCell)
               distance = config_soma_ref_density &
                   - (1.0_RKIND - config_soma_density_difference_linear) * config_soma_density_difference &
                   * tanh(zMid / config_soma_thermocline_depth) &
@@ -331,6 +331,7 @@ contains
                  activeTracers(index_temperature, k, iCell) = temperature
                  activeTracers(index_salinity, k, iCell) = salinity
               end if
+              zMid = zMid + 0.5_RKIND*layerThickness(k, iCell)
            enddo
 
            if (config_soma_use_surface_temp_restoring) then
