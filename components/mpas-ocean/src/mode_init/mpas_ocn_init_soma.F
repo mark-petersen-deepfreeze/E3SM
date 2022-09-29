@@ -258,8 +258,8 @@ contains
               if (maxLevelCell(iCell) > 0) then
                 maxLevelCell(iCell) = nVertLevels
                 do k = 1, nVertLevels
-                   layerThickness(k, :) = bottomDepth(iCell) * ( interfaceLocations(k+1) - interfaceLocations(k) )
-                   restingThickness(k, :) = layerThickness(k, :)
+                   layerThickness(k, iCell) = bottomDepth(iCell) * ( interfaceLocations(k+1) - interfaceLocations(k) )
+                   restingThickness(k, iCell) = layerThickness(k, iCell)
                 end do
               end if
            enddo
