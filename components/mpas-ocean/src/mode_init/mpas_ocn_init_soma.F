@@ -183,6 +183,8 @@ contains
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'verticalMesh', verticalMeshPool)
         call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
         call mpas_pool_get_array(meshPool, 'latCell', latCell)
         call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
@@ -191,6 +193,9 @@ contains
         call mpas_pool_get_array(meshPool, 'fVertex', fVertex)
         call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
         call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+        call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+        call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
+        call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
 
         ! set bottomDepth
         bottomDepth(:) = 0.0_RKIND
@@ -252,15 +257,10 @@ contains
            do iCell = 1, nCells
               if (maxLevelCell(iCell) > 0) then
                 maxLevelCell(iCell) = nVertLevels
-                if (nVertLevels .gt. 1) then
-                   do k = 1, nVertLevels
-                     if (bottomDepth(iCell) < refBottomDepth(k) ) then
-                         maxLevelCell(iCell) = k-1
-                         bottomDepth(iCell) = refBottomDepth(k-1)
-                         exit
-                     end if
-                   end do
-                end if
+                do k = 1, nVertLevels
+                   layerThickness(k, :) = bottomDepth(iCell) * ( interfaceLocations(k+1) - interfaceLocations(k) )
+                   restingThickness(k, :) = layerThickness(k, :)
+                end do
               end if
            enddo
         else
