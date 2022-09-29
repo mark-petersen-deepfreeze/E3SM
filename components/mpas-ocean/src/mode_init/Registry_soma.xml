@@ -3,6 +3,10 @@
 			description="Number of vertical levels in SOMA."
 			possible_values="Any positive integer. Typically 40 or larger."
 		/>
+		<nml_option name="config_soma_bottom_type" type="character" default_value="z" units="unitless"
+			description="Method to initialize bottom"
+			possible_values="flat, sigma"
+		/>
 		<nml_option name="config_soma_domain_width" type="real" default_value="1.25e6" units="m"
 			description="Approximate radius of the SOMA domain."
 			possible_values="Any real positive number"

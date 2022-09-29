@@ -218,25 +218,53 @@ contains
            else
              maxLevelCell(iCell) = -1
            endif
-
-           ! Determine maxLevelCell based on bottomDepth and refBottomDepth
-           ! Also set botomDepth based on refBottomDepth, since
-           ! above bottomDepth was set with continuous analytical functions,
-           ! and needs to be discrete
-           if (maxLevelCell(iCell) > 0) then
-             maxLevelCell(iCell) = nVertLevels
-             if (nVertLevels .gt. 1) then
-                do k = 1, nVertLevels
-                  if (bottomDepth(iCell) < refBottomDepth(k) ) then
-                      maxLevelCell(iCell) = k-1
-                      bottomDepth(iCell) = refBottomDepth(k-1)
-                      exit
-                  end if
-                end do
-             end if
-           end if
-
         enddo ! Looping through with iCell
+
+        if (config_soma_bottom_type.eq.'z') then
+           do iCell = 1, nCells
+              ! Determine maxLevelCell based on bottomDepth and refBottomDepth
+              ! Also set botomDepth based on refBottomDepth, since
+              ! above bottomDepth was set with continuous analytical functions,
+              ! and needs to be discrete
+              if (maxLevelCell(iCell) > 0) then
+                maxLevelCell(iCell) = nVertLevels
+                if (nVertLevels .gt. 1) then
+                   do k = 1, nVertLevels
+                     if (bottomDepth(iCell) < refBottomDepth(k) ) then
+                         maxLevelCell(iCell) = k-1
+                         bottomDepth(iCell) = refBottomDepth(k-1)
+                         exit
+                     end if
+                   end do
+                end if
+              end if
+           enddo ! Looping through with iCell
+        elseif (config_soma_bottom_type.eq.'flat') then
+           do iCell = 1, nCells
+              if (maxLevelCell(iCell) > 0) then
+                maxLevelCell(iCell) = nVertLevels
+                k = nVertLevels
+                bottomDepth(iCell) = refBottomDepth(k)
+              end if
+           enddo
+        elseif (config_soma_bottom_type.eq.'sigma') then
+           do iCell = 1, nCells
+              if (maxLevelCell(iCell) > 0) then
+                maxLevelCell(iCell) = nVertLevels
+                if (nVertLevels .gt. 1) then
+                   do k = 1, nVertLevels
+                     if (bottomDepth(iCell) < refBottomDepth(k) ) then
+                         maxLevelCell(iCell) = k-1
+                         bottomDepth(iCell) = refBottomDepth(k-1)
+                         exit
+                     end if
+                   end do
+                end if
+              end if
+           enddo
+        else
+           call mpas_log_write( 'config_soma_bottom_type incorrect', MPAS_LOG_CRIT)
+        endif
 
         block_ptr => block_ptr % next
 
