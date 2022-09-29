@@ -102,6 +102,7 @@ contains
       integer, dimension(:), pointer :: maxLevelCell
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth, bottomCell, refZMid, fCell, fEdge, fVertex
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
+        real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
       real (kind=RKIND), pointer :: sphere_radius
       real (kind=RKIND), dimension(:), pointer :: lonCell, latCell, latEdge, latVertex, bottomDepth
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
@@ -265,6 +266,8 @@ contains
         else
            call mpas_log_write( 'config_soma_bottom_type incorrect', MPAS_LOG_CRIT)
         endif
+        call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
+        normalVelocity(:,:) = 0.0_RKIND
 
         block_ptr => block_ptr % next
 
