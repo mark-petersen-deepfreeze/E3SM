@@ -355,6 +355,12 @@ contains
            end if
 
         end do ! iCell = 1, nCells
+        if (config_soma_set_tracers_constant) then
+           if ( associated(activeTracers) ) then
+              activeTracers(index_temperature, :, :) = config_soma_surface_temperature
+              activeTracers(index_salinity, :, :) = config_soma_surface_salinity
+           end if
+        endif
 
         ! Set wind stress
         do iCell = 1, nCells
