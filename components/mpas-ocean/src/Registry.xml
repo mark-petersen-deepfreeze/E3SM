@@ -1038,6 +1038,10 @@
 					description="Order of polynomial used for tracer reconstruction at layer edges for flux-form method"
 					possible_values="2, 3 and 4"
 		/>
+		<nml_option name="config_vert_adv_avg_weight_self" type="real" default_value="0.5"
+					description="When averaging tracers before vertical advection, weight for self. If 1, neighbors are not averaged in. If 0.5, neighbors get equal weighting with self"
+					possible_values="any real between 0 and 1"
+		/>
 		<nml_option name="config_horiz_tracer_adv_order" type="integer" default_value="3"
 					description="Order of polynomial used for tracer reconstruction at cell edges"
 					possible_values="2, 3 and 4"

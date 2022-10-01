@@ -90,11 +90,20 @@ module ocn_tracer_advection_vert
 
       integer :: &
          iCell,            &! cell address
+         j, coc,           &! 
          k, kmin, kmax      ! current, min, max vertical layer indices
 
       real (kind=RKIND) :: &
          verticalWeightK,  &! weights for vertical advection
          verticalWeightKm1  ! weights for vertical advection
+
+      real (kind=RKIND) :: wt, wt1
+
+      real (kind=RKIND), dimension(:), allocatable :: areaSum
+      real (kind=RKIND), dimension(:,:), allocatable :: tracerAvg
+
+      allocate(tracerAvg(nVertLevels,nCellsAll))
+      allocate(areaSum(nVertLevels))
 
       ! End preamble
       !-----------------------------------------------------------------
@@ -105,16 +114,38 @@ module ocn_tracer_advection_vert
       ! Initialize return flux to zero
       ! Also ensures that top and bottom fluxes are zero
 
+      wt = config_vert_adv_avg_weight_self
+      wt1= (1-config_vert_adv_avg_weight_self)
+
 #ifdef MPAS_OPENACC
       !$acc parallel loop collapse(2) present(vertFlx)
 #else
       !$omp parallel
-      !$omp do schedule(runtime) private(k)
+      !$omp do schedule(runtime) private(k,j,coc)
 #endif
+      ! mrp note: A simple average may be sufficient. There are also much
+      ! fancier ways to average, for example only average when vertical
+      ! velocities are opposite.
       do iCell = 1, nCellsAll
-      do k=1,nVertLevels+1
-         vertFlx(k,iCell) = 0.0_RKIND
-      end do
+         do k=1,nVertLevels+1
+            vertFlx(k,iCell) = 0.0_RKIND
+         end do
+
+         do k=minLevelCell(iCell),maxLevelCell(iCell)
+            tracerAvg(k,iCell) = wt*areaCell(iCell)*tracer(k,iCell)
+            areaSum(k) = wt*areaCell(iCell)
+         end do
+         do j = 1, nEdgesOnCell(iCell)
+            coc = cellsOnCell(j, iCell)
+            do k=minLevelCell(coc),maxLevelCell(coc)
+               tracerAvg(k,iCell) = tracerAvg(k,iCell) + wt1*areaCell(iCell)*tracer(k,coc)
+               areaSum(k) = areaSum(k) + wt1*areaCell(coc)
+            end do
+         end do
+         do k=minLevelCell(iCell),maxLevelCell(iCell)
+            tracerAvg(k,iCell) = tracerAvg(k,iCell)/AreaSum(k)
+         end do
+
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
@@ -140,10 +171,10 @@ module ocn_tracer_advection_vert
             kmax = maxLevelCell(iCell)
             do k=kmin+2,kmax-1
                vertFlx(k, iCell) = w(k,iCell)* &
-                                   ( 7.0_RKIND*(tracer(k  ,iCell)+ &
-                                                tracer(k-1,iCell)) &
-                                             - (tracer(k+1,iCell)+ &
-                                                tracer(k-2,iCell)))/&
+                                   ( 7.0_RKIND*(tracerAvg(k  ,iCell)+ &
+                                                tracerAvg(k-1,iCell)) &
+                                             - (tracerAvg(k+1,iCell)+ &
+                                                tracerAvg(k-2,iCell)))/&
                                                 12.0_RKIND
             end do ! vertical loop
          end do ! iCell Loop
@@ -167,15 +198,15 @@ module ocn_tracer_advection_vert
             kmax = maxLevelCell(iCell)
             do k=kmin+2,kmax-1
                vertFlx(k, iCell) = (w(k,iCell)* &
-                                   (7.0_RKIND * (tracer(k  ,iCell)+ &
-                                                 tracer(k-1,iCell)) - &
-                                                (tracer(k+1,iCell)+ &
-                                                 tracer(k-2,iCell))) - &
+                                   (7.0_RKIND * (tracerAvg(k  ,iCell)+ &
+                                                 tracerAvg(k-1,iCell)) - &
+                                                (tracerAvg(k+1,iCell)+ &
+                                                 tracerAvg(k-2,iCell))) - &
                                 coef3rdOrder*abs(w(k,iCell))* &
-                                               ((tracer(k+1,iCell)- &
-                                                 tracer(k-2,iCell)) - &
-                                      3.0_RKIND*(tracer(k  ,iCell)- &
-                                                 tracer(k-1,iCell))))/ &
+                                               ((tracerAvg(k+1,iCell)- &
+                                                 tracerAvg(k-2,iCell)) - &
+                                      3.0_RKIND*(tracerAvg(k  ,iCell)- &
+                                                 tracerAvg(k-1,iCell))))/ &
                                                  12.0_RKIND
             end do ! vertical loop
          end do ! iCell Loop
@@ -207,8 +238,8 @@ module ocn_tracer_advection_vert
                                   (layerThick(k  ,iCell) + &
                                    layerThick(k-1,iCell))
                vertFlx(k,iCell) = w(k, iCell) * &
-                           (verticalWeightK  *tracer(k  ,iCell) + &
-                            verticalWeightKm1*tracer(k-1,iCell))
+                           (verticalWeightK  *tracerAvg(k  ,iCell) + &
+                            verticalWeightKm1*tracerAvg(k-1,iCell))
             end do ! vertical loop
          end do ! iCell Loop
 #ifndef MPAS_OPENACC
@@ -247,8 +278,8 @@ module ocn_tracer_advection_vert
                                (layerThick(k  ,iCell) + &
                                 layerThick(k-1,iCell))
             vertFlx(k,iCell) = w(k,iCell)&
-                          *(verticalWeightK  *tracer(k  ,iCell) + &
-                            verticalWeightKm1*tracer(k-1,iCell))
+                          *(verticalWeightK  *tracerAvg(k  ,iCell) + &
+                            verticalWeightKm1*tracerAvg(k-1,iCell))
             ! Deepest active level also at 2nd order
             k = kmax
             verticalWeightK   = layerThick(k-1,iCell) / &
@@ -258,8 +289,8 @@ module ocn_tracer_advection_vert
                                (layerThick(k  ,iCell) + &
                                 layerThick(k-1,iCell))
             vertFlx(k,iCell) = w(k,iCell)* &
-                          (verticalWeightK  *tracer(k  ,iCell) + &
-                           verticalWeightKm1*tracer(k-1,iCell))
+                          (verticalWeightK  *tracerAvg(k  ,iCell) + &
+                           verticalWeightKm1*tracerAvg(k-1,iCell))
          end if ! kmax > kmin
       end do ! iCell Loop
 #ifndef MPAS_OPENACC
@@ -268,6 +299,7 @@ module ocn_tracer_advection_vert
 #endif
 
    !--------------------------------------------------------------------
+   deallocate(tracerAvg,areaSum)
 
    end subroutine ocn_tracer_advection_vert_flx !}}}
 
