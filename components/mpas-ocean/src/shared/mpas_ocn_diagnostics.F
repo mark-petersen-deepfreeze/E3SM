@@ -237,7 +237,7 @@ contains
       call ocn_diagnostic_solve_vortVel(relativeVorticity, &
              layerThickEdgeFlux, normalVelocity, normalTransportVelocity, &
              vertVelocityTop, vertTransportVelocityTop, relativeVorticityCell, &
-             divergence, divergenceSmooth,divergenceNoise, divergenceDamped, normalVelocityDivDamping, &
+             divergence, divergenceSmooth,divergenceNoise,divergenceBtr, divergenceDamped, normalVelocityDivDamping, &
              kineticEnergyCell, tangentialVelocity)
 
       !compute vertical velocity due to gm bolus velocity if requested
@@ -1776,7 +1776,7 @@ contains
    subroutine ocn_diagnostic_solve_vortVel(relativeVorticity, &
                 layerThicknessEdgeFlux, normalVelocity, normalTransportVelocity, &
                 vertVelocityTop, vertTransportVelocityTop, relativeVorticityCell, &
-                divergence, divergenceSmooth,divergenceNoise, divergenceDamped, normalVelocityDivDamping, &
+                divergence, divergenceSmooth,divergenceNoise,divergenceBtr, divergenceDamped, normalVelocityDivDamping, &
                 kineticEnergyCell, tangentialVelocity)!{{{
 
       implicit none
@@ -1814,6 +1814,8 @@ contains
          kineticEnergyCell
       real (kind=RKIND), dimension(:,:), intent(out) :: &
          tangentialVelocity
+      real (kind=RKIND), dimension(:), intent(out) :: &
+         divergenceBtr
 
       !-----------------------------------------------------------------
       !
@@ -1961,8 +1963,15 @@ contains
 ! mrp check ACC later if needed
       allocate(areaSum(nVertLevels))
       do iCell = 1, nCells
+         divergenceBtr(iCell) = 0.0_RKIND
          do k=minLevelCell(iCell),maxLevelCell(iCell)
-            divergenceSmooth(k,iCell) = config_divergence_self_weight*areaCell(iCell)*divergence(k,iCell)
+            divergenceBtr(iCell) = divergenceBtr(iCell) + divergence(k,iCell)
+         end do
+      end do
+      do iCell = 1, nCells
+         do k=minLevelCell(iCell),maxLevelCell(iCell)
+            divergenceSmooth(k,iCell) = config_divergence_self_weight*areaCell(iCell) &
+               *(divergence(k,iCell) - divergenceBtr(iCell))
             areaSum(k) = config_divergence_self_weight*areaCell(iCell)
          end do
          do j = 1, nEdgesOnCell(iCell)
@@ -1996,7 +2005,7 @@ contains
             !      divergenceNoise(k,cell1)*areaCell(cell1)) 
             ! This one is right order
             normalVelocityDivDamping(k, iEdge) = config_invert_divergence_coef &
-                * edgeMask(k,iEdge)*dvEdge(iEdge)*( &
+                * edgeMask(k,iEdge)*dcEdge(iEdge)*( &
                   divergenceNoise(k,cell2)- &
                   divergenceNoise(k,cell1)  )
          end do

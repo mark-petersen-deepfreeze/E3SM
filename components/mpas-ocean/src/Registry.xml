@@ -2759,6 +2759,10 @@
 			 description="divergence of horizontal velocity"
 			 packages="forwardMode;analysisMode"
 		/>
+		<var name="divergenceBtr" type="real" dimensions="nCells Time" units="s^-1"
+			 description="divergence of horizontal velocity"
+			 packages="forwardMode;analysisMode"
+		/>
 		<var name="divergenceDamped" type="real" dimensions="nVertLevels nCells Time" units="s^-1"
 			 description="divergence of horizontal velocity"
 			 packages="forwardMode;analysisMode"

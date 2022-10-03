@@ -44,6 +44,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: divergenceSmooth
    real (kind=RKIND), dimension(:,:), pointer :: divergenceDamped
    real (kind=RKIND), dimension(:,:), pointer :: divergenceNoise
+   real (kind=RKIND), dimension(:), pointer :: divergenceBtr
    real (kind=RKIND), dimension(:,:), pointer :: circulation
    real (kind=RKIND), dimension(:,:), pointer :: relativeVorticity
    real (kind=RKIND), dimension(:,:), pointer :: relativeVorticityCell
@@ -391,6 +392,7 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'divergenceSmooth', divergenceSmooth)
          call mpas_pool_get_array(diagnosticsPool, 'divergenceDamped', divergenceDamped)
          call mpas_pool_get_array(diagnosticsPool, 'divergenceNoise', divergenceNoise)
+         call mpas_pool_get_array(diagnosticsPool, 'divergenceBtr', divergenceBtr)
          call mpas_pool_get_array(diagnosticsPool, 'circulation', circulation)
 
          call mpas_pool_get_array(diagnosticsPool, 'velocityX', velocityX)
@@ -703,6 +705,7 @@ contains
          !$acc                   divergenceSmooth,                      &
          !$acc                   divergenceDamped,                      &
          !$acc                   divergenceNoise,                      &
+         !$acc                   divergenceBtr,                      &
          !$acc                   RiTopOfCell,                     &
          !$acc                   RiTopOfEdge,                     &
          !$acc                   SSHGradient,                     &
@@ -955,6 +958,7 @@ contains
          !$acc                   divergenceSmooth,                      &
          !$acc                   divergenceDamped,                      &
          !$acc                   divergenceNoise,                      &
+         !$acc                   divergenceBtr,                      &
          !$acc                   RiTopOfCell,                     &
          !$acc                   RiTopOfEdge,                     &
          !$acc                   SSHGradient,                     &
@@ -1165,6 +1169,7 @@ contains
                  divergenceSmooth,                      &
                  divergenceDamped,                      &
                  divergenceNoise,                      &
+                 divergenceBtr,                      &
                  RiTopOfCell,                     &
                  RiTopOfEdge,                     &
                  SSHGradient,                     &
