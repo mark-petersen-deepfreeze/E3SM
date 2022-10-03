@@ -232,12 +232,12 @@ contains
       ! inputs: relativeVorticity, layerThickEdgeFlux, normalVelocity, normalTransportVelocity, 
       !         normalGMBolusVelocity
       ! outputs: vertTransportVelocityTop, vertGMBolusVelocityTop, relativeVorticityCell, 
-      !          divergence, kineticEnergyCell, tangentialVelocity, vertMLEBolusVelocityTop
+      !          divergence, divergenceSmooth, kineticEnergyCell, tangentialVelocity, vertMLEBolusVelocityTop
       ! in and out: vertVelocityTop
       call ocn_diagnostic_solve_vortVel(relativeVorticity, &
              layerThickEdgeFlux, normalVelocity, normalTransportVelocity, &
              vertVelocityTop, vertTransportVelocityTop, relativeVorticityCell, &
-             divergence, kineticEnergyCell, tangentialVelocity)
+             divergence, divergenceSmooth, kineticEnergyCell, tangentialVelocity)
 
       !compute vertical velocity due to gm bolus velocity if requested
       if (config_use_gm) then
@@ -472,6 +472,7 @@ contains
       !!                                            vertGMBolusVelocityTop, (diagnostics array)
       !!                                            relativeVorticityCell, (diagnostics array)
       !!                                            divergence, (diagnostics array)
+      !!                                            divergenceSmooth, (diagnostics array)
       !!                                            kineticEnergyCell, (diagnostics array)
       !!                                            tangentialVelocity (diagnostics array)
       !!                                            vertVelocityTop (diagnostics array)
@@ -508,6 +509,7 @@ contains
 !     !$acc             vertGMBolusVelocityTop, &
 !     !$acc             relativeVorticityCell, &
 !     !$acc             divergence, &
+!     !$acc             divergenceSmooth, &
 !     !$acc             kineticEnergyCell, &
 !     !$acc             tangentialVelocity, &
 !     !$acc             vertVelocityTop)
@@ -1773,7 +1775,7 @@ contains
    subroutine ocn_diagnostic_solve_vortVel(relativeVorticity, &
                 layerThicknessEdgeFlux, normalVelocity, normalTransportVelocity, &
                 vertVelocityTop, vertTransportVelocityTop, relativeVorticityCell, &
-                divergence, kineticEnergyCell, tangentialVelocity)!{{{
+                divergence, divergenceSmooth, kineticEnergyCell, tangentialVelocity)!{{{
 
       implicit none
 
@@ -1805,7 +1807,7 @@ contains
       real (kind=RKIND), dimension(:,:), intent(out) :: &
          relativeVorticityCell
       real (kind=RKIND), dimension(:,:), intent(out) :: &
-         divergence
+         divergence, divergenceSmooth
       real (kind=RKIND), dimension(:,:), intent(out) :: &
          kineticEnergyCell
       real (kind=RKIND), dimension(:,:), intent(out) :: &
@@ -1819,12 +1821,13 @@ contains
 
       integer :: nCells, nEdges
       integer :: iCell, iVertex, iEdge
-      integer :: i, j, k
+      integer :: i, j, k, coc
       integer :: edgeSignOnCell_temp, eoe
       real(kind=RKIND) :: invAreaCell1
       real(kind=RKIND) :: dcEdge_temp, dvEdge_temp, r_tmp, weightsOnEdge_temp
 
       real (kind=RKIND), dimension(:), allocatable:: div_hu,div_huTransport
+      real (kind=RKIND), dimension(:), allocatable :: areaSum
 
 #ifdef MPAS_OPENACC
       !$acc declare device_resident(div_hu, div_huTransport)
@@ -1872,7 +1875,7 @@ contains
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop gang vector &
-      !$acc          present(divergence, kineticEnergyCell, &
+      !$acc          present(divergence, divergenceSmooth, kineticEnergyCell, &
       !$acc                  areaCell, nEdgesOnCell, edgesOnCell, edgeSignOnCell, dcEdge, dvEdge, &
       !$acc                  maxLevelCell, normalVelocity, divergence, layerThicknessEdgeFlux, &
       !$acc                  normalTransportVelocity, vertVelocityTop, vertTransportVelocityTop, &
@@ -1887,6 +1890,7 @@ contains
 #endif
       do iCell = 1, nCells
          divergence(:, iCell) = 0.0_RKIND
+         divergenceSmooth(:, iCell) = 0.0_RKIND
          kineticEnergyCell(:, iCell) = 0.0_RKIND
          div_hu(:) = 0.0_RKIND
          div_huTransport(:) = 0.0_RKIND
@@ -1951,6 +1955,41 @@ contains
       !$omp end parallel
 #endif
 
+! mrp check ACC later if needed
+      allocate(areaSum(nVertLevels))
+#ifdef MPAS_OPENACC
+      !$acc parallel loop gang vector &
+      !$acc          present(relativeVorticityCell, areaCell, nEdgesOnCell, &
+      !$acc                  kiteIndexOnCell, verticesOnCell, maxLevelCell, &
+      !$acc                  relativeVorticity, kiteAreasOnVertex, invAreaCell, &
+      !$acc                  minLevelCell) &
+      !$acc          private(invAreaCell1, i, j, iVertex, k)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime) private(invAreaCell1, i, j, k, iVertex)
+#endif
+      do iCell = 1, nCells
+         do k=minLevelCell(iCell),maxLevelCell(iCell)
+            divergenceSmooth(k,iCell) = config_divergence_self_weight*areaCell(iCell)*divergence(k,iCell)
+            areaSum(k) = config_divergence_self_weight*areaCell(iCell)
+         end do
+         do j = 1, nEdgesOnCell(iCell)
+            coc = cellsOnCell(j, iCell)
+            do k=minLevelCell(coc),maxLevelCell(coc)
+               divergenceSmooth(k,iCell) = divergenceSmooth(k,iCell) + areaCell(iCell)*divergence(k,coc)
+               areaSum(k) = areaSum(k) + areaCell(coc)
+            end do
+         end do
+         do k=minLevelCell(iCell),maxLevelCell(iCell)
+            divergenceSmooth(k,iCell) = divergenceSmooth(k,iCell)/AreaSum(k)
+         end do
+
+      end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+      deallocate(areaSum)
    end subroutine ocn_diagnostic_solve_vortVel!}}}
 
 !***********************************************************************

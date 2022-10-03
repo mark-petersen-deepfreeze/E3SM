@@ -1054,6 +1054,14 @@
 					description="Slope limiter for the vertical remap advection scheme."
 					possible_values="'none','monotonic','weno'"
 		/>
+		<nml_option name="config_divergence_self_weight" type="real" default_value="2.0"
+					description="when computing divergenceSmooth, weight for self relative to neighbors."
+					possible_values="any real between 0 and 4"
+		/>
+		<nml_option name="config_invert_divergence_coef" type="real" default_value="0.25"
+					description="coefficient for inverting divergence"
+					possible_values="any real between 0 and 4"
+		/>
 	</nml_record>
 	<nml_record name="bottom_drag" mode="forward">
 		<nml_option name="config_use_implicit_bottom_drag" type="logical" default_value=".true."
@@ -2744,6 +2752,10 @@
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="divergence" type="real" dimensions="nVertLevels nCells Time" units="s^-1"
+			 description="divergence of horizontal velocity"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="divergenceSmooth" type="real" dimensions="nVertLevels nCells Time" units="s^-1"
 			 description="divergence of horizontal velocity"
 			 packages="forwardMode;analysisMode"
 		/>

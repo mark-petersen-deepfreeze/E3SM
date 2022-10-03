@@ -41,6 +41,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: zMid
    real (kind=RKIND), dimension(:,:), pointer :: zTop
    real (kind=RKIND), dimension(:,:), pointer :: divergence
+   real (kind=RKIND), dimension(:,:), pointer :: divergenceSmooth
    real (kind=RKIND), dimension(:,:), pointer :: circulation
    real (kind=RKIND), dimension(:,:), pointer :: relativeVorticity
    real (kind=RKIND), dimension(:,:), pointer :: relativeVorticityCell
@@ -384,6 +385,7 @@ contains
 
          call mpas_pool_get_array(diagnosticsPool, 'viscosity', viscosity)
          call mpas_pool_get_array(diagnosticsPool, 'divergence', divergence)
+         call mpas_pool_get_array(diagnosticsPool, 'divergenceSmooth', divergenceSmooth)
          call mpas_pool_get_array(diagnosticsPool, 'circulation', circulation)
 
          call mpas_pool_get_array(diagnosticsPool, 'velocityX', velocityX)
@@ -690,6 +692,7 @@ contains
          !$acc                   velocityY,                       &
          !$acc                   velocityZ,                       &
          !$acc                   divergence,                      &
+         !$acc                   divergenceSmooth,                      &
          !$acc                   RiTopOfCell,                     &
          !$acc                   RiTopOfEdge,                     &
          !$acc                   SSHGradient,                     &
@@ -938,6 +941,7 @@ contains
          !$acc                   velocityY,                       &
          !$acc                   velocityZ,                       &
          !$acc                   divergence,                      &
+         !$acc                   divergenceSmooth,                      &
          !$acc                   RiTopOfCell,                     &
          !$acc                   RiTopOfEdge,                     &
          !$acc                   SSHGradient,                     &
@@ -1144,6 +1148,7 @@ contains
                  velocityY,                       &
                  velocityZ,                       &
                  divergence,                      &
+                 divergenceSmooth,                      &
                  RiTopOfCell,                     &
                  RiTopOfEdge,                     &
                  SSHGradient,                     &
