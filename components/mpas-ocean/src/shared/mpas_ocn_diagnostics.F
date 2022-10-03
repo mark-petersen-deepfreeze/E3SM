@@ -232,12 +232,13 @@ contains
       ! inputs: relativeVorticity, layerThickEdgeFlux, normalVelocity, normalTransportVelocity, 
       !         normalGMBolusVelocity
       ! outputs: vertTransportVelocityTop, vertGMBolusVelocityTop, relativeVorticityCell, 
-      !          divergence, divergenceSmooth, kineticEnergyCell, tangentialVelocity, vertMLEBolusVelocityTop
+      !          divergence, divergenceSmooth,divergenceNoise, kineticEnergyCell, tangentialVelocity, vertMLEBolusVelocityTop
       ! in and out: vertVelocityTop
       call ocn_diagnostic_solve_vortVel(relativeVorticity, &
              layerThickEdgeFlux, normalVelocity, normalTransportVelocity, &
              vertVelocityTop, vertTransportVelocityTop, relativeVorticityCell, &
-             divergence, divergenceSmooth, kineticEnergyCell, tangentialVelocity)
+             divergence, divergenceSmooth,divergenceNoise, divergenceDamped, normalVelocityDivDamping, &
+             kineticEnergyCell, tangentialVelocity)
 
       !compute vertical velocity due to gm bolus velocity if requested
       if (config_use_gm) then
@@ -1775,7 +1776,8 @@ contains
    subroutine ocn_diagnostic_solve_vortVel(relativeVorticity, &
                 layerThicknessEdgeFlux, normalVelocity, normalTransportVelocity, &
                 vertVelocityTop, vertTransportVelocityTop, relativeVorticityCell, &
-                divergence, divergenceSmooth, kineticEnergyCell, tangentialVelocity)!{{{
+                divergence, divergenceSmooth,divergenceNoise, divergenceDamped, normalVelocityDivDamping, &
+                kineticEnergyCell, tangentialVelocity)!{{{
 
       implicit none
 
@@ -1807,7 +1809,7 @@ contains
       real (kind=RKIND), dimension(:,:), intent(out) :: &
          relativeVorticityCell
       real (kind=RKIND), dimension(:,:), intent(out) :: &
-         divergence, divergenceSmooth
+         divergence, divergenceSmooth,divergenceNoise, divergenceDamped, normalVelocityDivDamping
       real (kind=RKIND), dimension(:,:), intent(out) :: &
          kineticEnergyCell
       real (kind=RKIND), dimension(:,:), intent(out) :: &
@@ -1821,9 +1823,11 @@ contains
 
       integer :: nCells, nEdges
       integer :: iCell, iVertex, iEdge
-      integer :: i, j, k, coc
+      integer :: i, j, k, coc, &
+         cell1, cell2, &! neighbor cell indices across an edge
+         kmin, kmax     ! min,max active vertical levels
       integer :: edgeSignOnCell_temp, eoe
-      real(kind=RKIND) :: invAreaCell1
+      real(kind=RKIND) :: invAreaCell1, invdvEdge
       real(kind=RKIND) :: dcEdge_temp, dvEdge_temp, r_tmp, weightsOnEdge_temp
 
       real (kind=RKIND), dimension(:), allocatable:: div_hu,div_huTransport
@@ -1875,7 +1879,7 @@ contains
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop gang vector &
-      !$acc          present(divergence, divergenceSmooth, kineticEnergyCell, &
+      !$acc          present(divergence, kineticEnergyCell, &
       !$acc                  areaCell, nEdgesOnCell, edgesOnCell, edgeSignOnCell, dcEdge, dvEdge, &
       !$acc                  maxLevelCell, normalVelocity, divergence, layerThicknessEdgeFlux, &
       !$acc                  normalTransportVelocity, vertVelocityTop, vertTransportVelocityTop, &
@@ -1890,7 +1894,6 @@ contains
 #endif
       do iCell = 1, nCells
          divergence(:, iCell) = 0.0_RKIND
-         divergenceSmooth(:, iCell) = 0.0_RKIND
          kineticEnergyCell(:, iCell) = 0.0_RKIND
          div_hu(:) = 0.0_RKIND
          div_huTransport(:) = 0.0_RKIND
@@ -1957,17 +1960,6 @@ contains
 
 ! mrp check ACC later if needed
       allocate(areaSum(nVertLevels))
-#ifdef MPAS_OPENACC
-      !$acc parallel loop gang vector &
-      !$acc          present(relativeVorticityCell, areaCell, nEdgesOnCell, &
-      !$acc                  kiteIndexOnCell, verticesOnCell, maxLevelCell, &
-      !$acc                  relativeVorticity, kiteAreasOnVertex, invAreaCell, &
-      !$acc                  minLevelCell) &
-      !$acc          private(invAreaCell1, i, j, iVertex, k)
-#else
-      !$omp parallel
-      !$omp do schedule(runtime) private(invAreaCell1, i, j, k, iVertex)
-#endif
       do iCell = 1, nCells
          do k=minLevelCell(iCell),maxLevelCell(iCell)
             divergenceSmooth(k,iCell) = config_divergence_self_weight*areaCell(iCell)*divergence(k,iCell)
@@ -1982,14 +1974,48 @@ contains
          end do
          do k=minLevelCell(iCell),maxLevelCell(iCell)
             divergenceSmooth(k,iCell) = divergenceSmooth(k,iCell)/AreaSum(k)
+            divergenceNoise(k,iCell) = divergence(k,iCell) - divergenceSmooth(k,iCell)
          end do
 
       end do
-#ifndef MPAS_OPENACC
-      !$omp end do
-      !$omp end parallel
-#endif
+
       deallocate(areaSum)
+
+      do iEdge=1,nEdges
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
+         invdvEdge = 1.0_RKIND / dvEdge(iEdge)
+         kMin = minLevelEdgeBot(iEdge)
+         kMax = maxLevelEdgeTop(iEdge)
+
+         do k=kMin,kMax
+            ! should work, but produced tiny numbers
+            !normalVelocityDivDamping(k, iEdge) = config_invert_divergence_coef &
+            !    * edgeMask(k,iEdge)*invdvEdge*( &
+            !      divergenceNoise(k,cell2)*areaCell(cell2) - &
+            !      divergenceNoise(k,cell1)*areaCell(cell1)) 
+            ! This one is right order
+            normalVelocityDivDamping(k, iEdge) = config_invert_divergence_coef &
+                * edgeMask(k,iEdge)*dvEdge(iEdge)*( &
+                  divergenceNoise(k,cell2)- &
+                  divergenceNoise(k,cell1)  )
+         end do
+      end do
+
+      do iCell = 1, nCells
+         divergenceDamped(:, iCell) = 0.0_RKIND
+         invAreaCell1 = invAreaCell(iCell)
+         do i = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i, iCell)
+            edgeSignOnCell_temp = edgeSignOnCell(i, iCell)
+            dvEdge_temp = dvEdge(iEdge)
+            do k = minLevelCell(iCell), maxLevelCell(iCell)
+               r_tmp = dvEdge_temp * (normalVelocity(k, iEdge) + normalVelocityDivDamping(k, iEdge)) * invAreaCell1
+
+               divergenceDamped(k, iCell) = divergenceDamped(k, iCell) - edgeSignOnCell_temp * r_tmp
+            end do
+         end do
+      end do
    end subroutine ocn_diagnostic_solve_vortVel!}}}
 
 !***********************************************************************

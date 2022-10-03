@@ -42,11 +42,14 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: zTop
    real (kind=RKIND), dimension(:,:), pointer :: divergence
    real (kind=RKIND), dimension(:,:), pointer :: divergenceSmooth
+   real (kind=RKIND), dimension(:,:), pointer :: divergenceDamped
+   real (kind=RKIND), dimension(:,:), pointer :: divergenceNoise
    real (kind=RKIND), dimension(:,:), pointer :: circulation
    real (kind=RKIND), dimension(:,:), pointer :: relativeVorticity
    real (kind=RKIND), dimension(:,:), pointer :: relativeVorticityCell
    real (kind=RKIND), dimension(:,:), pointer :: normPlanetVortEdge
    real (kind=RKIND), dimension(:,:), pointer :: normRelVortEdge
+   real (kind=RKIND), dimension(:,:), pointer :: normalVelocityDivDamping
    real (kind=RKIND), dimension(:,:), pointer :: normalizedRelativeVorticityCell
    real (kind=RKIND), dimension(:,:), pointer :: density
    real (kind=RKIND), dimension(:,:), pointer :: displaceddensity
@@ -386,6 +389,8 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'viscosity', viscosity)
          call mpas_pool_get_array(diagnosticsPool, 'divergence', divergence)
          call mpas_pool_get_array(diagnosticsPool, 'divergenceSmooth', divergenceSmooth)
+         call mpas_pool_get_array(diagnosticsPool, 'divergenceDamped', divergenceDamped)
+         call mpas_pool_get_array(diagnosticsPool, 'divergenceNoise', divergenceNoise)
          call mpas_pool_get_array(diagnosticsPool, 'circulation', circulation)
 
          call mpas_pool_get_array(diagnosticsPool, 'velocityX', velocityX)
@@ -450,6 +455,9 @@ contains
          call mpas_pool_get_array(diagnosticsPool, &
                   'normalizedRelativeVorticityEdge', &
                    normRelVortEdge)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'normalVelocityDivDamping', &
+                   normalVelocityDivDamping)
          call mpas_pool_get_array(diagnosticsPool, &
                   'normalizedPlanetaryVorticityEdge', &
                    normPlanetVortEdge)
@@ -693,6 +701,8 @@ contains
          !$acc                   velocityZ,                       &
          !$acc                   divergence,                      &
          !$acc                   divergenceSmooth,                      &
+         !$acc                   divergenceDamped,                      &
+         !$acc                   divergenceNoise,                      &
          !$acc                   RiTopOfCell,                     &
          !$acc                   RiTopOfEdge,                     &
          !$acc                   SSHGradient,                     &
@@ -708,6 +718,7 @@ contains
          !$acc                   layerThickEdgeMean,              &
          !$acc                   slopeTriadDown,                  &
          !$acc                   normRelVortEdge,                 &
+         !$acc                   normalVelocityDivDamping,                 &
          !$acc                   surfaceVelocity,                 &
          !$acc                   vertVelocityTop,                 &
          !$acc                   eddyVelocityX,                   &
@@ -942,6 +953,8 @@ contains
          !$acc                   velocityZ,                       &
          !$acc                   divergence,                      &
          !$acc                   divergenceSmooth,                      &
+         !$acc                   divergenceDamped,                      &
+         !$acc                   divergenceNoise,                      &
          !$acc                   RiTopOfCell,                     &
          !$acc                   RiTopOfEdge,                     &
          !$acc                   SSHGradient,                     &
@@ -957,6 +970,7 @@ contains
          !$acc                   layerThickEdgeMean,              &
          !$acc                   slopeTriadDown,                  &
          !$acc                   normRelVortEdge,                 &
+         !$acc                   normalVelocityDivDamping,                 &
          !$acc                   surfaceVelocity,                 &
          !$acc                   vertVelocityTop,                 &
          !$acc                   eddyVelocityX,                   &
@@ -1149,6 +1163,8 @@ contains
                  velocityZ,                       &
                  divergence,                      &
                  divergenceSmooth,                      &
+                 divergenceDamped,                      &
+                 divergenceNoise,                      &
                  RiTopOfCell,                     &
                  RiTopOfEdge,                     &
                  SSHGradient,                     &
@@ -1164,6 +1180,7 @@ contains
                  layerThickEdgeMean,              &
                  slopeTriadDown,                  &
                  normRelVortEdge,                 &
+                 normalVelocityDivDamping,                 &
                  surfaceVelocity,                 &
                  vertVelocityTop,                 &
                  eddyVelocityX,                   &

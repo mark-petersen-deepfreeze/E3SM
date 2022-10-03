@@ -2759,6 +2759,18 @@
 			 description="divergence of horizontal velocity"
 			 packages="forwardMode;analysisMode"
 		/>
+		<var name="divergenceDamped" type="real" dimensions="nVertLevels nCells Time" units="s^-1"
+			 description="divergence of horizontal velocity"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="divergenceNoise" type="real" dimensions="nVertLevels nCells Time" units="s^-1"
+			 description="divergence of horizontal velocity"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="normalVelocityDivDamping" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
+			 description="horizontal velocity used to damp divergence"
+			 packages="forwardMode;analysisMode"
+		/>
 		<var name="circulation" type="real" dimensions="nVertLevels nVertices Time" units="m^2 s^-1"
 			 description="area-integrated vorticity"
 			 packages="forwardMode;analysisMode"
