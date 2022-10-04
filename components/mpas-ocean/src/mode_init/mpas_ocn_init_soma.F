@@ -25,6 +25,7 @@ module ocn_init_soma
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_constants
+   use mpas_dmpar
 
    use ocn_constants
    use ocn_config
@@ -86,12 +87,15 @@ contains
       type (mpas_pool_type), pointer :: meshPool, verticalMeshPool, statePool, forcingPool, tracersPool
       type (mpas_pool_type), pointer :: tracersSurfaceRestoringFieldsPool, tracersInteriorRestoringFieldsPool
 
+      logical :: spherical_domain
       integer :: iCell, iEdge, iVertex, k, idx
       real (kind=RKIND) :: distance, deltaLon, deltaLat, xDistance, yDistance, zMid, sphereRadius
       real (kind=RKIND) :: lonCurrent, latCurrent
       real (kind=RKIND) :: deltay, depth, factor, latCenter, lonCenter, windStress
       real (kind=RKIND) :: temperature, salinity
       real (kind=RKIND), dimension(:), pointer :: interfaceLocations
+      real (kind=RKIND) :: yMin, yMax, xMin, xMax
+      real (kind=RKIND) :: yMinGlobal, yMaxGlobal, xMidGlobal, yMidGlobal, xMinGlobal, xMaxGlobal
 
       ! Define dimension pointers
       integer, pointer :: nVertLevels, nCells, nVertLevelsP1, nCellsSolve, nEdgesSolve, nVerticesSolve
@@ -100,6 +104,7 @@ contains
       ! Define variable pointers
       logical, pointer :: on_a_sphere
       integer, dimension(:), pointer :: maxLevelCell
+      real (kind=RKIND), dimension(:), pointer :: xCell, yCell, xVertex, yVertex, xEdge, yEdge
       real (kind=RKIND), dimension(:), pointer :: refBottomDepth, bottomCell, refZMid, fCell, fEdge, fVertex
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness
       real (kind=RKIND), pointer :: sphere_radius
@@ -124,10 +129,49 @@ contains
 
       ! error checking
       if(.not. on_a_sphere) then
-        call mpas_log_write( 'SOMA test case can only be defined on a spherical mesh.', MPAS_LOG_CRIT)
-        iErr = 1
-        return
+        sphereRadius = 6371000
+        call mpas_log_write( 'SOMA test case on a planar mesh.')
+        spherical_domain = .false.
+        ! Initalize min/max values to large positive and negative values
+        yMin = 1.0E10_RKIND
+        yMax = -1.0E10_RKIND
+        xMin = 1.0E10_RKIND
+        xMax = -1.0E10_RKIND
+
+        ! Determine local min and max values.
+        block_ptr => domain % blocklist
+        do while(associated(block_ptr))
+          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+
+          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+          call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+
+          call mpas_pool_get_array(meshPool, 'xCell', xCell)
+          call mpas_pool_get_array(meshPool, 'yCell', yCell)
+          call mpas_pool_get_array(meshPool, 'xEdge', xEdge)
+          call mpas_pool_get_array(meshPool, 'yEdge', yEdge)
+          call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
+          call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
+
+          yMin = min( yMin, minval(yCell(1:nCellsSolve)))
+          yMax = max( yMax, maxval(yCell(1:nCellsSolve)))
+          xMin = min( xMin, minval(xCell(1:nCellsSolve)))
+          xMax = max( xMax, maxval(xCell(1:nCellsSolve)))
+
+        block_ptr => block_ptr % next
+        end do
+        print *, 'xMin,xMax,yMin,yMax',xMin,xMax,yMin,yMax
+        print *, 'xMidGlobal,yMidGlobal',xMidGlobal,yMidGlobal
+        ! Determine global min and max values.
+        call mpas_dmpar_min_real(domain % dminfo, yMin, yMinGlobal)
+        call mpas_dmpar_max_real(domain % dminfo, yMax, yMaxGlobal)
+        call mpas_dmpar_min_real(domain % dminfo, xMin, xMinGlobal)
+        call mpas_dmpar_max_real(domain % dminfo, xMax, xMaxGlobal)
+
+        xMidGlobal = (xMinGlobal + xMaxGlobal) * 0.5_RKIND
+        yMidGlobal = (yMinGlobal + yMaxGlobal) * 0.5_RKIND
       else
+        spherical_domain = .true.
         call mpas_log_write( 'SOMA test case using spherical radius of size: $f ', realArgs=(/ sphereRadius /) )
       end if
 
@@ -197,11 +241,16 @@ contains
            lonCurrent = lonCell(iCell)
            latCurrent = latCell(iCell)
 
-           deltaLon = abs(lonCurrent - lonCenter)
-           if (deltaLon .gt. pii) deltaLon = deltaLon - 2.0_RKIND*pii
-           deltaLat = latCurrent - latCenter
-           xDistance = deltaLon * sphereRadius * cos(latCurrent)
-           yDistance = deltaLat * sphereRadius
+           if (spherical_domain) then
+              deltaLon = abs(lonCurrent - lonCenter)
+              if (deltaLon .gt. pii) deltaLon = deltaLon - 2.0_RKIND*pii
+              deltaLat = latCurrent - latCenter
+              xDistance = deltaLon * sphereRadius * cos(latCurrent)
+              yDistance = deltaLat * sphereRadius
+           else
+              xDistance = xCell(iCell) - xMidGlobal
+              yDistance = yCell(iCell) - yMidGlobal
+           end if
            distance = sqrt( xDistance**2 + yDistance**2 )
            factor = 1.0 - distance**2 / config_soma_domain_width**2
 
@@ -278,6 +327,12 @@ contains
           'activeTracersSurfaceRestoringValue', activeTracersSurfaceRestoringValue, 1)
 
         do iCell = 1, nCells
+           if (spherical_domain) then
+              latCurrent = latCell(iCell)
+           else
+              deltay = yCell(iCell) - yMidGlobal
+              latCurrent = latCenter + deltay/sphereRadius
+           end if
            lonCurrent = lonCell(iCell)
            latCurrent = latCell(iCell)
 
@@ -326,10 +381,12 @@ contains
 
         ! Set wind stress
         do iCell = 1, nCells
-           lonCurrent = lonCell(iCell)
-           latCurrent = latCell(iCell)
-
-           deltay =  sphereRadius * ( latCurrent - latCenter )
+           if (spherical_domain) then
+              latCurrent = latCell(iCell)
+              deltay =  sphereRadius * ( latCurrent - latCenter )
+           else
+              deltay = yCell(iCell) - yMidGlobal
+           end if
            factor = 1.0_RKIND - 0.5_RKIND * deltay / config_soma_domain_width
            windstress = factor * 0.1_RKIND * exp( -(deltay / config_soma_domain_width)**2 ) &
                  * cos(pii * deltay / config_soma_domain_width)
@@ -340,15 +397,30 @@ contains
         end do
 
        ! Set Coriolis parameters
-       do iCell = 1, nCellsSolve
-          fCell(iCell) = 2.0_RKIND * omega * sin(latCell(iCell))
-       end do
-       do iEdge = 1, nEdgesSolve
-          fEdge(iEdge) = 2.0_RKIND * omega * sin(latEdge(iEdge))
-       end do
-       do iVertex = 1, nVerticesSolve
-          fVertex(iVertex) = 2.0_RKIND * omega * sin(latVertex(iVertex))
-       end do
+       if (spherical_domain) then
+          do iCell = 1, nCellsSolve
+             fCell(iCell) = 2.0_RKIND * omega * sin(latCell(iCell))
+          end do
+          do iEdge = 1, nEdgesSolve
+             fEdge(iEdge) = 2.0_RKIND * omega * sin(latEdge(iEdge))
+          end do
+          do iVertex = 1, nVerticesSolve
+             fVertex(iVertex) = 2.0_RKIND * omega * sin(latVertex(iVertex))
+          end do
+       else
+          do iCell = 1, nCellsSolve
+             deltay = yCell(iCell) - yMidGlobal
+             fCell(iCell) = 2.0_RKIND * omega * sin(latCenter + deltay/sphereRadius)
+          end do
+          do iEdge = 1, nEdgesSolve
+             deltay = yEdge(iEdge) - yMidGlobal
+             fEdge(iEdge) = 2.0_RKIND * omega * sin(latCenter + deltay/sphereRadius)
+          end do
+          do iVertex = 1, nVerticesSolve
+             deltay = yVertex(iVertex) - yMidGlobal
+             fVertex(iVertex) = 2.0_RKIND * omega * sin(latCenter + deltay/sphereRadius)
+          end do
+       end if
 
         block_ptr => block_ptr % next
       end do
